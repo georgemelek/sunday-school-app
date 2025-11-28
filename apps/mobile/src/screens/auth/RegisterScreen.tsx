@@ -58,7 +58,7 @@ export default function RegisterScreen({ navigation }: Props) {
         options: {
           data: {
             full_name: fullName.trim(),
-            phone: phone.trim(),
+            phone: phone.trim() || null,
             role,
           },
         },
@@ -70,18 +70,9 @@ export default function RegisterScreen({ navigation }: Props) {
         throw new Error('Registration failed - no user created')
       }
 
-      // Create profile (if not automatically created by database trigger)
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: authData.user.id,
-        full_name: fullName.trim(),
-        phone: phone.trim() || null,
-        role,
-      })
-
-      // Ignore error if profile already exists (created by trigger)
-      if (profileError && !profileError.message.includes('duplicate')) {
-        console.error('Profile creation error:', profileError)
-      }
+      // Profile will be automatically created by database trigger
+      // Wait a moment for trigger to complete
+      await new Promise(resolve => setTimeout(resolve, 500))
 
       Alert.alert(
         'Success',

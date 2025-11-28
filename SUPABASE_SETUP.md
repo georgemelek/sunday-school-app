@@ -274,8 +274,15 @@ BEGIN
   VALUES (
     new.id,
     COALESCE(new.raw_user_meta_data->>'full_name', 'New User'),
-    new.raw_user_meta_data->>'phone',
-    COALESCE(new.raw_user_meta_data->>'role', 'servant')
+    NULLIF(new.raw_user_meta_data->>'phone', ''),
+    COALESCE(
+      CASE
+        WHEN new.raw_user_meta_data->>'role' IN ('servant', 'coordinator', 'priest')
+        THEN new.raw_user_meta_data->>'role'
+        ELSE 'servant'
+      END,
+      'servant'
+    )
   );
   RETURN new;
 END;
