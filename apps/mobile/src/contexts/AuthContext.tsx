@@ -53,7 +53,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq('id', userId)
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Profile fetch error:', error)
+        throw error
+      }
+
+      if (!data) {
+        console.error('No profile data returned for user:', userId)
+        throw new Error('Profile not found')
+      }
+
+      console.log('Profile fetched successfully:', data)
       setProfile(data)
     } catch (error) {
       console.error('Error fetching profile:', error)
