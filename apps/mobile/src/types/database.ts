@@ -477,3 +477,20 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
+// Helper types for easier use throughout the app
+export type Church = Database['public']['Tables']['churches']['Row']
+export type Profile = Database['public']['Tables']['profiles']['Row']
+export type Grade = Database['public']['Tables']['grades']['Row']
+export type Student = Database['public']['Tables']['students']['Row']
+export type Attendance = Database['public']['Tables']['attendance']['Row']
+export type ServantGrade = Database['public']['Tables']['servant_grades']['Row']
+export type ChurchInvitation = Database['public']['Tables']['church_invitations']['Row']
+
+export type ChurchInsert = Database['public']['Tables']['churches']['Insert']
+export type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
+export type GradeInsert = Database['public']['Tables']['grades']['Insert']
+export type StudentInsert = Database['public']['Tables']['students']['Insert']
+export type AttendanceInsert = Database['public']['Tables']['attendance']['Insert']
+export type ServantGradeInsert = Database['public']['Tables']['servant_grades']['Insert']
+export type ChurchInvitationInsert = Database['public']['Tables']['church_invitations']['Insert']
