@@ -18,6 +18,7 @@ import AddStudentScreen from '../screens/servant/AddStudentScreen'
 import EditStudentScreen from '../screens/servant/EditStudentScreen'
 import TakeAttendanceScreen from '../screens/servant/TakeAttendanceScreen'
 import SessionDetailScreen from '../screens/servant/SessionDetailScreen'
+import AvailabilityScreen from '../screens/servant/AvailabilityScreen'
 import type { Session } from '../hooks/useSessions'
 
 // Coordinator screens
@@ -94,7 +95,7 @@ import type { Session } from '../hooks/useSessions'
 
 function PlaceholderScreen() {
   const [selectedRole, setSelectedRole] = React.useState<'servant' | 'coordinator' | null>(null)
-  const [currentScreen, setCurrentScreen] = React.useState<'dashboard' | 'grades' | 'gradeDetail' | 'addStudent' | 'editStudent' | 'takeAttendance' | 'sessionDetail'>('dashboard')
+  const [currentScreen, setCurrentScreen] = React.useState<'dashboard' | 'grades' | 'gradeDetail' | 'addStudent' | 'editStudent' | 'takeAttendance' | 'sessionDetail' | 'availability'>('dashboard')
   const [selectedGrade, setSelectedGrade] = React.useState<{ id: string; name: string } | null>(null)
   const [selectedStudent, setSelectedStudent] = React.useState<any>(null)
   const [selectedSession, setSelectedSession] = React.useState<Session | null>(null)
@@ -143,6 +144,10 @@ function PlaceholderScreen() {
   const handleNavigateToSessionDetail = (session: Session) => {
     setCurrentScreen('sessionDetail')
     setSelectedSession(session)
+  }
+
+  const handleNavigateToAvailability = () => {
+    setCurrentScreen('availability')
   }
 
   if (selectedRole === 'servant') {
@@ -209,9 +214,14 @@ function PlaceholderScreen() {
       )
     }
 
+    if (currentScreen === 'availability') {
+      return <AvailabilityScreen onBack={handleNavigateToDashboard} />
+    }
+
     return (
       <DashboardScreen
         onNavigateToGrades={handleNavigateToGrades}
+        onNavigateToAvailability={handleNavigateToAvailability}
         onSessionPress={handleNavigateToSessionDetail}
       />
     )

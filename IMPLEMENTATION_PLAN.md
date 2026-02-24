@@ -64,13 +64,13 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 
 ---
 
-## 🚧 Week 2b: Servant Dashboard & Schedule (UP NEXT - UI with mock data)
+## 🚧 Week 2b: Servant Dashboard & Schedule (IN PROGRESS - UI with mock data)
 
 > This is new scope. Adds the personalized servant dashboard, class/session data model, and availability tracking — replacing the Google Sheets currently used for curriculum schedules and servant availability.
 
-### Phase 1: Data Model & Mock Hooks
+### ✅ Phase 1: Data Model & Mock Hooks (COMPLETED)
 
-- [ ] **Task 2b.1**: Create mock data model for classes and sessions
+- [x] **Task 2b.1**: Create mock data model for classes and sessions
   - Create `useClasses` hook with mock data
     - Class types: Sunday School, Small Group, FNA, Bible Study
     - Classes: "6th Grade Sunday School", "6th Grade Boys Small Group", "5th & 6th Grade FNA", etc.
@@ -82,15 +82,15 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
     - Mock availability entries for George and co-servants (from real availability tracker)
     - CRUD: mark available/unavailable for a date
 
-### Phase 2: Servant Dashboard Screen
+### ✅ Phase 2: Servant Dashboard Screen (COMPLETED)
 
-- [ ] **Task 2b.2**: Create ServantDashboardScreen
+- [x] **Task 2b.2**: Create ServantDashboardScreen
   - Time-aware greeting ("Good morning/afternoon/evening, {name}")
   - Replace MyGradesScreen as the servant home screen
   - Navigation to existing grades/attendance flow still accessible
   - *Use mock data for logged-in user (George Melek)*
 
-- [ ] **Task 2b.3**: Upcoming sessions feed
+- [x] **Task 2b.3**: Upcoming sessions feed
   - Show next 7 days of sessions across all the servant's classes
   - Each session card shows:
     - Class name + type tag (e.g., "6th Grade Boys — Small Group")
@@ -103,13 +103,13 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
   - If the session is canceled: visual treatment + notes (e.g., "Canceled - Snow Storm")
   - Empty state when no upcoming sessions
 
-- [ ] **Task 2b.4**: Servant availability awareness on dashboard
+- [x] **Task 2b.4**: Servant availability awareness on dashboard
   - Show which co-servants are unavailable for each upcoming session
   - e.g., "Revana and Steven will be out this week"
   - If the servant themselves is marked out: "You've marked yourself unavailable for this session"
   - Staffing alert if only 1-2 servants available: "Heads up: only 2 servants available"
 
-- [ ] **Task 2b.5**: Session detail view
+- [x] **Task 2b.5**: Session detail view
   - Tapping a session card expands or navigates to detail
   - Full lesson info: topic, page number, reference material/link
   - Full servant roster with availability status for that date
@@ -424,10 +424,10 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 ## 📊 Progress Tracking
 
 ### Current Status
-- **Completed**: Week 1 Foundation, Week 2a Servant Flow Core (all UI with mock data)
-- **Up Next**: Week 2b Servant Dashboard & Schedule (UI with mock data)
+- **Completed**: Week 1 Foundation, Week 2a Servant Flow Core, Week 2b Phases 1-2 (dashboard, sessions, session detail)
+- **Up Next**: Week 2b Phase 3 — Availability Management (Task 2b.6, 2b.7)
 - **Deferred**: Auth flow re-enablement, all Supabase integration
-- **After That**: Week 3 Coordinator Flow → Supabase Integration → Testing & Deployment
+- **After That**: Week 2b Phase 4 (navigation update) → Week 3 Coordinator Flow → Supabase Integration → Testing & Deployment
 
 ### Risks
 1. **Expanded scope**: The app is now significantly bigger than the original attendance-only MVP
