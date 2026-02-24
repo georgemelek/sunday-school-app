@@ -15,7 +15,7 @@ import { useClasses } from '../../hooks/useClasses'
 import { CURRENT_USER, MOCK_CLASS_TYPES } from '../../data/mockData'
 
 interface AvailabilityScreenProps {
-  onBack: () => void
+  onBack?: () => void
 }
 
 interface DateGroup {
@@ -129,9 +129,11 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onBack} style={styles.backButton}>
-            <Text style={styles.backText}>{'\u2039'} Dashboard</Text>
-          </TouchableOpacity>
+          {onBack && (
+            <TouchableOpacity onPress={onBack} style={styles.backButton}>
+              <Text style={styles.backText}>{'\u2039'} Dashboard</Text>
+            </TouchableOpacity>
+          )}
           <Text style={styles.headerTitle}>My Availability</Text>
         </View>
         <View style={styles.loadingContainer}>
@@ -145,9 +147,11 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backText}>{'\u2039'} Dashboard</Text>
-        </TouchableOpacity>
+        {onBack && (
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Text style={styles.backText}>{'\u2039'} Dashboard</Text>
+          </TouchableOpacity>
+        )}
         <Text style={styles.headerTitle}>My Availability</Text>
       </View>
 

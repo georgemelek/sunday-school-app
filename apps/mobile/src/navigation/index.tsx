@@ -1,14 +1,16 @@
 import React from 'react'
-// import { NavigationContainer } from '@react-navigation/native'
-// import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { NavigationContainer } from '@react-navigation/native'
+import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 
-// import { useAuth } from '../contexts/AuthContext'
-// import { AuthStackParamList, ServantStackParamList, CoordinatorStackParamList } from '../types/navigation'
-
-// Auth screens
-// import LoginScreen from '../screens/auth/LoginScreen'
-// import RegisterScreen from '../screens/auth/RegisterScreen'
+import type {
+  ServantTabParamList,
+  DashboardStackParamList,
+  GradesStackParamList,
+  AvailabilityStackParamList,
+  SettingsStackParamList,
+} from '../types/navigation'
 
 // Servant screens
 import DashboardScreen from '../screens/servant/DashboardScreen'
@@ -19,216 +21,251 @@ import EditStudentScreen from '../screens/servant/EditStudentScreen'
 import TakeAttendanceScreen from '../screens/servant/TakeAttendanceScreen'
 import SessionDetailScreen from '../screens/servant/SessionDetailScreen'
 import AvailabilityScreen from '../screens/servant/AvailabilityScreen'
-import type { Session } from '../hooks/useSessions'
 
-// Coordinator screens
-// import DashboardScreen from '../screens/coordinator/DashboardScreen'
+// --- Stack Navigators ---
 
-// const AuthStack = createNativeStackNavigator<AuthStackParamList>()
-// const ServantStack = createNativeStackNavigator<ServantStackParamList>()
-// const CoordinatorStack = createNativeStackNavigator<CoordinatorStackParamList>()
+const DashboardStack = createNativeStackNavigator<DashboardStackParamList>()
+const GradesStack = createNativeStackNavigator<GradesStackParamList>()
+const AvailabilityStack = createNativeStackNavigator<AvailabilityStackParamList>()
+const SettingsStack = createNativeStackNavigator<SettingsStackParamList>()
+const Tab = createBottomTabNavigator<ServantTabParamList>()
 
-// function AuthNavigator() {
-//   return (
-//     <AuthStack.Navigator
-//       screenOptions={{
-//         headerShown: false,
-//       }}
-//     >
-//       <AuthStack.Screen name="Login" component={LoginScreen} />
-//       <AuthStack.Screen name="Register" component={RegisterScreen} />
-//     </AuthStack.Navigator>
-//   )
-// }
+// --- Dashboard Tab Stack ---
 
-// function ServantNavigator() {
-//   return (
-//     <ServantStack.Navigator
-//       screenOptions={{
-//         headerStyle: {
-//           backgroundColor: '#007AFF',
-//         },
-//         headerTintColor: '#fff',
-//         headerTitleStyle: {
-//           fontWeight: '600' as any,
-//         },
-//       }}
-//     >
-//       <ServantStack.Screen
-//         name="MyGrades"
-//         component={MyGradesScreen}
-//         options={{ title: 'My Grades' }}
-//       />
-//     </ServantStack.Navigator>
-//   )
-// }
+function DashboardStackNavigator() {
+  return (
+    <DashboardStack.Navigator screenOptions={{ headerShown: false }}>
+      <DashboardStack.Screen name="Dashboard">
+        {({ navigation }) => (
+          <DashboardScreen
+            onNavigateToGrades={() =>
+              navigation.getParent()?.navigate('GradesTab')
+            }
+            onNavigateToAvailability={() =>
+              navigation.getParent()?.navigate('AvailabilityTab')
+            }
+            onSessionPress={(session) =>
+              navigation.navigate('SessionDetail', { session })
+            }
+          />
+        )}
+      </DashboardStack.Screen>
 
-// function CoordinatorNavigator() {
-//   return (
-//     <CoordinatorStack.Navigator
-//       screenOptions={{
-//         headerStyle: {
-//           backgroundColor: '#007AFF',
-//         },
-//         headerTintColor: '#fff',
-//         headerTitleStyle: {
-//           fontWeight: '600' as any,
-//         },
-//       }}
-//     >
-//       <CoordinatorStack.Screen
-//         name="Dashboard"
-//         component={DashboardScreen}
-//         options={{ title: 'Dashboard' }}
-//       />
-//     </CoordinatorStack.Navigator>
-//   )
-// }
+      <DashboardStack.Screen name="SessionDetail">
+        {({ navigation, route }) => (
+          <SessionDetailScreen
+            session={route.params.session}
+            onBack={() => navigation.goBack()}
+            onTakeAttendance={(gradeId, gradeName) =>
+              navigation.navigate('TakeAttendance', { gradeId, gradeName })
+            }
+          />
+        )}
+      </DashboardStack.Screen>
 
-// function LoadingScreen() {
-//   return (
-//     <View style={styles.loadingContainer}>
-//       <ActivityIndicator size="large" color="#007AFF" />
-//     </View>
-//   )
-// }
+      <DashboardStack.Screen name="TakeAttendance">
+        {({ navigation, route }) => (
+          <TakeAttendanceScreen
+            gradeId={route.params.gradeId}
+            gradeName={route.params.gradeName}
+            onBack={() => navigation.goBack()}
+          />
+        )}
+      </DashboardStack.Screen>
+    </DashboardStack.Navigator>
+  )
+}
 
-function PlaceholderScreen() {
-  const [selectedRole, setSelectedRole] = React.useState<'servant' | 'coordinator' | null>(null)
-  const [currentScreen, setCurrentScreen] = React.useState<'dashboard' | 'grades' | 'gradeDetail' | 'addStudent' | 'editStudent' | 'takeAttendance' | 'sessionDetail' | 'availability'>('dashboard')
-  const [selectedGrade, setSelectedGrade] = React.useState<{ id: string; name: string } | null>(null)
-  const [selectedStudent, setSelectedStudent] = React.useState<any>(null)
-  const [selectedSession, setSelectedSession] = React.useState<Session | null>(null)
+// --- Grades Tab Stack ---
 
-  // Pass navigation handler to MyGradesScreen
-  const handleGradePress = (gradeId: string, gradeName: string) => {
-    setSelectedGrade({ id: gradeId, name: gradeName })
-    setCurrentScreen('gradeDetail')
-  }
+function GradesStackNavigator() {
+  return (
+    <GradesStack.Navigator screenOptions={{ headerShown: false }}>
+      <GradesStack.Screen name="MyGrades">
+        {({ navigation }) => (
+          <MyGradesScreen
+            onGradePress={(gradeId, gradeName) =>
+              navigation.navigate('GradeDetail', { gradeId, gradeName })
+            }
+          />
+        )}
+      </GradesStack.Screen>
 
-  const handleNavigateToDashboard = () => {
-    setCurrentScreen('dashboard')
-    setSelectedGrade(null)
-    setSelectedStudent(null)
-    setSelectedSession(null)
-  }
+      <GradesStack.Screen name="GradeDetail">
+        {({ navigation, route }) => (
+          <GradeDetailScreen
+            gradeId={route.params.gradeId}
+            gradeName={route.params.gradeName}
+            onBack={() => navigation.goBack()}
+            onAddStudent={() =>
+              navigation.navigate('AddStudent', {
+                gradeId: route.params.gradeId,
+                gradeName: route.params.gradeName,
+              })
+            }
+            onEditStudent={(student) =>
+              navigation.navigate('EditStudent', {
+                gradeId: route.params.gradeId,
+                gradeName: route.params.gradeName,
+                student,
+              })
+            }
+            onTakeAttendance={() =>
+              navigation.navigate('TakeAttendance', {
+                gradeId: route.params.gradeId,
+                gradeName: route.params.gradeName,
+              })
+            }
+          />
+        )}
+      </GradesStack.Screen>
 
-  const handleNavigateToGrades = () => {
-    setCurrentScreen('grades')
-  }
+      <GradesStack.Screen name="AddStudent">
+        {({ navigation, route }) => (
+          <AddStudentScreen
+            gradeId={route.params.gradeId}
+            gradeName={route.params.gradeName}
+            onBack={() => navigation.goBack()}
+          />
+        )}
+      </GradesStack.Screen>
 
-  const handleBackToGrades = () => {
-    setCurrentScreen('grades')
-    setSelectedGrade(null)
-    setSelectedStudent(null)
-  }
+      <GradesStack.Screen name="EditStudent">
+        {({ navigation, route }) => (
+          <EditStudentScreen
+            gradeId={route.params.gradeId}
+            gradeName={route.params.gradeName}
+            student={route.params.student}
+            onBack={() => navigation.goBack()}
+          />
+        )}
+      </GradesStack.Screen>
 
-  const handleBackToDetail = () => {
-    setCurrentScreen('gradeDetail')
-    setSelectedStudent(null)
-  }
+      <GradesStack.Screen name="TakeAttendance">
+        {({ navigation, route }) => (
+          <TakeAttendanceScreen
+            gradeId={route.params.gradeId}
+            gradeName={route.params.gradeName}
+            onBack={() => navigation.goBack()}
+          />
+        )}
+      </GradesStack.Screen>
+    </GradesStack.Navigator>
+  )
+}
 
-  const handleAddStudent = () => {
-    setCurrentScreen('addStudent')
-  }
+// --- Availability Tab Stack ---
 
-  const handleEditStudent = (student: any) => {
-    setSelectedStudent(student)
-    setCurrentScreen('editStudent')
-  }
+function AvailabilityStackNavigator() {
+  return (
+    <AvailabilityStack.Navigator screenOptions={{ headerShown: false }}>
+      <AvailabilityStack.Screen name="Availability">
+        {() => <AvailabilityScreen />}
+      </AvailabilityStack.Screen>
+    </AvailabilityStack.Navigator>
+  )
+}
 
-  const handleTakeAttendance = () => {
-    setCurrentScreen('takeAttendance')
-  }
+// --- Settings Tab Stack ---
 
-  const handleNavigateToSessionDetail = (session: Session) => {
-    setCurrentScreen('sessionDetail')
-    setSelectedSession(session)
-  }
+function SettingsPlaceholder() {
+  return (
+    <View style={styles.placeholderContainer}>
+      <Text style={styles.placeholderTitle}>Settings</Text>
+      <Text style={styles.placeholderText}>Coming soon</Text>
+    </View>
+  )
+}
 
-  const handleNavigateToAvailability = () => {
-    setCurrentScreen('availability')
-  }
+function SettingsStackNavigator() {
+  return (
+    <SettingsStack.Navigator screenOptions={{ headerShown: false }}>
+      <SettingsStack.Screen name="Settings" component={SettingsPlaceholder} />
+    </SettingsStack.Navigator>
+  )
+}
 
-  if (selectedRole === 'servant') {
-    if (currentScreen === 'takeAttendance' && selectedGrade) {
-      return (
-        <TakeAttendanceScreen
-          gradeId={selectedGrade.id}
-          gradeName={selectedGrade.name}
-          onBack={selectedSession ? () => {
-            setCurrentScreen('sessionDetail')
-            setSelectedGrade(null)
-          } : handleBackToDetail}
-        />
-      )
-    }
+// --- Servant Tab Navigator ---
 
-    if (currentScreen === 'addStudent' && selectedGrade) {
-      return (
-        <AddStudentScreen
-          gradeId={selectedGrade.id}
-          gradeName={selectedGrade.name}
-          onBack={handleBackToDetail}
-        />
-      )
-    }
-
-    if (currentScreen === 'editStudent' && selectedGrade && selectedStudent) {
-      return (
-        <EditStudentScreen
-          gradeId={selectedGrade.id}
-          gradeName={selectedGrade.name}
-          student={selectedStudent}
-          onBack={handleBackToDetail}
-        />
-      )
-    }
-
-    if (currentScreen === 'gradeDetail' && selectedGrade) {
-      return (
-        <GradeDetailScreen
-          gradeId={selectedGrade.id}
-          gradeName={selectedGrade.name}
-          onBack={handleBackToGrades}
-          onAddStudent={handleAddStudent}
-          onEditStudent={handleEditStudent}
-          onTakeAttendance={handleTakeAttendance}
-        />
-      )
-    }
-    if (currentScreen === 'grades') {
-      return <MyGradesScreen onGradePress={handleGradePress} onBack={handleNavigateToDashboard} />
-    }
-
-    if (currentScreen === 'sessionDetail' && selectedSession) {
-      return (
-        <SessionDetailScreen
-          session={selectedSession}
-          onBack={handleNavigateToDashboard}
-          onTakeAttendance={(gradeId, gradeName) => {
-            setSelectedGrade({ id: gradeId, name: gradeName })
-            setCurrentScreen('takeAttendance')
+function ServantTabNavigator() {
+  return (
+    <NavigationContainer>
+      <Tab.Navigator
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: '#007AFF',
+          tabBarInactiveTintColor: '#999',
+          tabBarStyle: {
+            borderTopColor: '#e0e0e0',
+          },
+        }}
+      >
+        <Tab.Screen
+          name="DashboardTab"
+          component={DashboardStackNavigator}
+          options={{
+            tabBarLabel: 'Dashboard',
+            tabBarIcon: ({ color }) => (
+              <Text style={{ fontSize: 20, color }}>{'🏠'}</Text>
+            ),
           }}
         />
-      )
-    }
+        <Tab.Screen
+          name="GradesTab"
+          component={GradesStackNavigator}
+          options={{
+            tabBarLabel: 'My Grades',
+            tabBarIcon: ({ color }) => (
+              <Text style={{ fontSize: 20, color }}>{'📚'}</Text>
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="AvailabilityTab"
+          component={AvailabilityStackNavigator}
+          options={{
+            tabBarLabel: 'Availability',
+            tabBarIcon: ({ color }) => (
+              <Text style={{ fontSize: 20, color }}>{'📅'}</Text>
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="SettingsTab"
+          component={SettingsStackNavigator}
+          options={{
+            tabBarLabel: 'Settings',
+            tabBarIcon: ({ color }) => (
+              <Text style={{ fontSize: 20, color }}>{'⚙️'}</Text>
+            ),
+          }}
+        />
+      </Tab.Navigator>
+    </NavigationContainer>
+  )
+}
 
-    if (currentScreen === 'availability') {
-      return <AvailabilityScreen onBack={handleNavigateToDashboard} />
-    }
+// --- Root Navigator (role selector) ---
 
-    return (
-      <DashboardScreen
-        onNavigateToGrades={handleNavigateToGrades}
-        onNavigateToAvailability={handleNavigateToAvailability}
-        onSessionPress={handleNavigateToSessionDetail}
-      />
-    )
+export default function RootNavigator() {
+  const [selectedRole, setSelectedRole] = React.useState<'servant' | 'coordinator' | null>(null)
+
+  if (selectedRole === 'servant') {
+    return <ServantTabNavigator />
   }
 
   if (selectedRole === 'coordinator') {
-    return <Text style={styles.title}>Coordinator Screen Coming Soon</Text>
+    return (
+      <View style={styles.placeholderContainer}>
+        <Text style={styles.title}>Coordinator Screen Coming Soon</Text>
+        <TouchableOpacity
+          style={styles.backLink}
+          onPress={() => setSelectedRole(null)}
+        >
+          <Text style={styles.backLinkText}>{'\u2039'} Back to role selector</Text>
+        </TouchableOpacity>
+      </View>
+    )
   }
 
   return (
@@ -254,31 +291,6 @@ function PlaceholderScreen() {
       </View>
     </View>
   )
-}
-
-export default function RootNavigator() {
-  // const { session, profile, loading } = useAuth()
-
-  return <PlaceholderScreen />
-
-  // return (
-  //   <NavigationContainer>
-  //     {loading ? (
-  //       <LoadingScreen />
-  //     ) : session && profile ? (
-  //       // Show role-specific navigator based on user role
-  //       profile.role === 'servant' ? (
-  //         <ServantNavigator />
-  //       ) : profile.role === 'coordinator' || profile.role === 'priest' ? (
-  //         <CoordinatorNavigator />
-  //       ) : (
-  //         <AuthNavigator />
-  //       )
-  //     ) : (
-  //       <AuthNavigator />
-  //     )}
-  //   </NavigationContainer>
-  // )
 }
 
 const styles = StyleSheet.create({
@@ -319,5 +331,29 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  placeholderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    padding: 20,
+  },
+  placeholderTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 8,
+  },
+  placeholderText: {
+    fontSize: 16,
+    color: '#666',
+  },
+  backLink: {
+    marginTop: 20,
+  },
+  backLinkText: {
+    fontSize: 16,
+    color: '#007AFF',
   },
 })

@@ -1,43 +1,71 @@
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { RouteProp } from '@react-navigation/native'
+import type { Session } from '../hooks/useSessions'
+import type { Student } from '../hooks/useStudents'
 
-// Auth Stack
+// --- Servant Tab Navigator ---
+
+export type ServantTabParamList = {
+  DashboardTab: undefined
+  GradesTab: undefined
+  AvailabilityTab: undefined
+  SettingsTab: undefined
+}
+
+// --- Dashboard Stack ---
+
+export type DashboardStackParamList = {
+  Dashboard: undefined
+  SessionDetail: { session: Session }
+  TakeAttendance: { gradeId: string; gradeName: string }
+}
+
+// --- Grades Stack ---
+
+export type GradesStackParamList = {
+  MyGrades: undefined
+  GradeDetail: { gradeId: string; gradeName: string }
+  AddStudent: { gradeId: string; gradeName: string }
+  EditStudent: { gradeId: string; gradeName: string; student: Student }
+  TakeAttendance: { gradeId: string; gradeName: string }
+}
+
+// --- Availability Stack ---
+
+export type AvailabilityStackParamList = {
+  Availability: undefined
+}
+
+// --- Settings Stack ---
+
+export type SettingsStackParamList = {
+  Settings: undefined
+}
+
+// --- Navigation prop types ---
+
+export type DashboardStackNavProp = NativeStackNavigationProp<DashboardStackParamList>
+export type GradesStackNavProp = NativeStackNavigationProp<GradesStackParamList>
+export type AvailabilityStackNavProp = NativeStackNavigationProp<AvailabilityStackParamList>
+export type SettingsStackNavProp = NativeStackNavigationProp<SettingsStackParamList>
+
+// --- Route prop types ---
+
+export type DashboardStackRouteProp<T extends keyof DashboardStackParamList> = RouteProp<DashboardStackParamList, T>
+export type GradesStackRouteProp<T extends keyof GradesStackParamList> = RouteProp<GradesStackParamList, T>
+
+// --- Auth Stack (preserved for future use) ---
+
 export type AuthStackParamList = {
   Login: undefined
   Register: undefined
 }
 
-// Servant Stack
-export type ServantStackParamList = {
-  MyGrades: undefined
-  GradeDetail: { gradeId: string; gradeName: string }
-  TakeAttendance: { gradeId: string; gradeName: string }
-  AddStudent: { gradeId: string }
-  EditStudent: { studentId: string; gradeId: string }
-  Profile: undefined
-}
+// --- Coordinator Stack (preserved for future use) ---
 
-// Coordinator Stack
 export type CoordinatorStackParamList = {
   Dashboard: undefined
   GradeAttendance: { gradeId: string; gradeName: string }
   AttendanceReport: undefined
   Profile: undefined
 }
-
-// Root Stack
-export type RootStackParamList = {
-  Auth: undefined
-  Servant: undefined
-  Coordinator: undefined
-}
-
-// Navigation prop types
-export type AuthNavigationProp = NativeStackNavigationProp<AuthStackParamList>
-export type ServantNavigationProp = NativeStackNavigationProp<ServantStackParamList>
-export type CoordinatorNavigationProp = NativeStackNavigationProp<CoordinatorStackParamList>
-
-// Route prop types
-export type AuthRouteProp<T extends keyof AuthStackParamList> = RouteProp<AuthStackParamList, T>
-export type ServantRouteProp<T extends keyof ServantStackParamList> = RouteProp<ServantStackParamList, T>
-export type CoordinatorRouteProp<T extends keyof CoordinatorStackParamList> = RouteProp<CoordinatorStackParamList, T>

@@ -76,7 +76,7 @@ When a servant logs in, they see a personalized feed of upcoming sessions across
 | `DESIGN.md` | Architecture decisions, tech stack rationale, DB schema (original + expanded), RLS policies |
 | `IMPLEMENTATION_PLAN.md` | Task-level tracking with checkboxes. Current status of every task. |
 | `SUPABASE_SETUP.md` | Backend setup guide, migrations, auth config |
-| `apps/mobile/src/navigation/index.tsx` | Navigation hub — placeholder screen with manual role selection |
+| `apps/mobile/src/navigation/index.tsx` | Navigation hub — bottom tabs + stack navigators, role selector |
 | `apps/mobile/src/hooks/` | `useGrades.ts`, `useStudents.ts`, `useAttendance.ts` — all mock data hooks |
 | `apps/mobile/src/screens/servant/` | All servant screens built so far |
 | `apps/mobile/src/components/` | Shared components (GradeCard, StudentListItem, AttendanceHistoryView) |
@@ -86,7 +86,7 @@ When a servant logs in, they see a personalized feed of upcoming sessions across
 - **Styling**: Primary `#007AFF`, secondary text `#666`, borders `#e0e0e0`, background `#f8f9fa`, error `#f44336`, present green `#4CAF50`, absent red `#f44336`
 - **Screen pattern**: Props interface with callbacks (`onBack`, `onSave`, etc.), header with paddingTop 60, back button "‹ Back" or "‹ Cancel"
 - **Hook pattern**: `useState` + `useEffect` fetch on mount, mock data with 500ms delay, commented-out Supabase queries with TODO markers
-- **Navigation**: State-based in PlaceholderScreen (not React Navigation yet — that's commented out)
+- **Navigation**: Bottom tab navigator (`@react-navigation/bottom-tabs`) with 4 tabs (Dashboard, My Grades, Availability, Settings), each wrapping a native stack. Role selector is React state above `NavigationContainer`.
 - **Forms**: Shared via mode prop (`'add' | 'edit'`), inline validation errors, footer save button with ActivityIndicator
 
 ## Real-World Context

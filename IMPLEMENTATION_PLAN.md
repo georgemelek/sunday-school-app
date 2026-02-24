@@ -132,11 +132,11 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 
 ### Phase 4: Navigation Update
 
-- [ ] **Task 2b.8**: Update navigation structure
-  - Servant home screen becomes ServantDashboardScreen (not MyGradesScreen)
-  - Add bottom tab or drawer: Dashboard | My Grades | Availability | Settings
+- [x] **Task 2b.8**: Update navigation structure
+  - Replaced PlaceholderScreen state machine with @react-navigation/bottom-tabs
+  - Bottom tabs: Dashboard | My Grades | Availability | Settings (each with its own native stack)
+  - Dashboard quick actions switch tabs; session cards push within stack
   - My Grades retains existing flow (grade list → detail → students/attendance)
-  - Wire up all new screens into PlaceholderScreen navigation
 
 ---
 
