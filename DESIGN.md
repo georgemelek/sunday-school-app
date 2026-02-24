@@ -1,26 +1,31 @@
 # Sunday School App - Technical Design Document
 
-**Author**: Claude
+**Author**: Claude + George Melek
 **Target Audience**: Software Engineer 2
-**Status**: Draft for Review
-**Last Updated**: November 2024
+**Status**: Living Document
+**Last Updated**: February 23, 2026
 
 ---
 
 ## 1. Executive Summary
 
-We're building a cross-platform (iOS + Android) Sunday School attendance app with a 1-month MVP deadline. The app supports a flexible registration model where servants can self-register and operate independently, with optional later integration when coordinators/priests join.
+We're building a cross-platform (iOS + Android) app for managing **Coptic Orthodox youth ministry**. Originally scoped as a Sunday School attendance app, the scope has expanded to cover **all class types** (Sunday School, Small Group, FNA, Bible Study), **curriculum scheduling**, and **servant availability tracking** — replacing the Google Sheets currently used for these purposes.
+
+The app supports a flexible registration model where servants can self-register and operate independently, with optional later integration when coordinators/priests join.
 
 **Key Constraints**:
-- 1-month timeline
 - Developer experience: React, TypeScript, Express/Node (no SQL or mobile experience)
 - Initial scale: 10 churches, 100 servants
 - Budget: Minimize costs while maintaining extensibility
 
-**Core MVP Features**:
-1. Servant flow: Self-register → Add students → Take attendance
-2. Coordinator flow: Register → View attendance across grades
-3. Flexible church linking (servant joins coordinator's church later)
+**Core Features**:
+1. **Servant dashboard**: Personalized view of upcoming sessions across all class types, who's teaching, who's out, locations
+2. **Attendance tracking**: Servants record attendance for their classes (original MVP scope — mostly built)
+3. **Schedule/curriculum management**: Coordinators create or import session schedules; servants see them read-only
+4. **Servant availability**: Servants mark dates they're unavailable; coordinators see coverage gaps
+5. **Student management**: Add, edit, view students per grade (built)
+6. **Coordinator dashboard**: Overview across all grades and class types in their scope
+7. **Flexible church linking**: Servant joins coordinator's church via invitation code
 
 ---
 
@@ -569,6 +574,261 @@ CREATE POLICY "Coordinators read all attendance" ON attendance
 - No way to bypass it (even if you mess up client code)
 - Supabase client respects RLS automatically
 - No Express middleware needed
+
+---
+
+## 4b. Expanded Schema: Classes, Sessions, and Availability
+
+> Added February 2026. The original schema handles grades, students, and attendance. This expansion adds support for **multiple class types**, **curriculum scheduling**, and **servant availability tracking** — replacing the Google Sheets currently used for these purposes.
+
+### Background: What Servants Actually Manage
+
+A servant doesn't just teach one Sunday class. They may be involved in:
+
+| Class Type | Example | Schedule | Location | Students |
+|---|---|---|---|---|
+| **Sunday School** | 6th Grade Boys & Girls | Sundays 11:30-12:30 | Church | Grade-specific |
+| **Small Group** | 6th Grade Boys | Tuesdays 7-8:30 | Rotating parent homes | Subset of grade |
+| **FNA** | 5th & 6th Grade Combined | Fridays, varies | Fun venues (bowling, etc.) | Multiple grades combined |
+| **Bible Study** | 5th & 6th Grade Combined | Wednesdays | Church | Multiple grades combined |
+
+Each class type has its own curriculum (or none, for FNA), its own servant roster, and potentially different students. The coordinator for Junior High oversees all of these across 5th-8th grade.
+
+### New Tables
+
+```sql
+-- Class types (Sunday School, Small Group, FNA, Bible Study, etc.)
+CREATE TABLE class_types (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  church_id UUID REFERENCES churches(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,           -- e.g., "Sunday School", "Small Group", "FNA", "Bible Study"
+  description TEXT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Classes: a recurring meeting tied to one or more grades
+-- Example: "6th Grade Boys Small Group" or "5th & 6th Grade FNA"
+CREATE TABLE classes (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  church_id UUID REFERENCES churches(id) ON DELETE CASCADE,
+  class_type_id UUID REFERENCES class_types(id),
+  name TEXT NOT NULL,                    -- e.g., "6th Grade Boys Small Group"
+  description TEXT,
+  default_location TEXT,                 -- e.g., "Church", or NULL for rotating
+  default_location_address TEXT,         -- Full address for map navigation
+  default_day_of_week TEXT,              -- e.g., "sunday", "tuesday", "friday"
+  default_start_time TIME,               -- e.g., '11:30'
+  default_end_time TIME,                 -- e.g., '12:30'
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Which grades participate in a class (many-to-many)
+-- FNA might include both 5th and 6th grade
+CREATE TABLE class_grades (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
+  grade_id UUID REFERENCES grades(id) ON DELETE CASCADE,
+  UNIQUE(class_id, grade_id)
+);
+
+-- Which servants are assigned to a class (many-to-many)
+CREATE TABLE class_servants (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
+  servant_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  UNIQUE(class_id, servant_id)
+);
+
+-- Sessions: individual occurrences of a class on a specific date
+-- This is the core of the schedule/curriculum — one row per meeting
+CREATE TABLE sessions (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  class_id UUID REFERENCES classes(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  start_time TIME,                       -- Override class default if needed
+  end_time TIME,
+  location_name TEXT,                    -- Override: e.g., "Max's House", "Bowlero Centreville"
+  location_address TEXT,                 -- Override: full address for Maps link
+  lesson_topic TEXT,                     -- e.g., "Priesthood in the Old Testament VS. New Testament"
+  lesson_page TEXT,                      -- e.g., "106", "Column F"
+  lesson_reference TEXT,                 -- e.g., "Matthew 18:10-14", URL, "Holy Week Book"
+  lesson_servant_id UUID REFERENCES profiles(id),  -- Who is giving the lesson
+  class_admin_id UUID REFERENCES profiles(id),     -- Class admin for that session
+  notes TEXT,                            -- e.g., "Canceled - Snow Storm"
+  status TEXT DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'canceled', 'completed')),
+  created_by UUID REFERENCES profiles(id),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(class_id, date)                -- One session per class per date
+);
+
+-- Servant availability: marks dates a servant is unavailable
+-- Replaces the "put X under dates" spreadsheet
+CREATE TABLE servant_availability (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  servant_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  available BOOLEAN NOT NULL DEFAULT false,  -- false = unavailable (the X)
+  notes TEXT,                                -- Optional reason
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(servant_id, date)               -- One record per servant per date
+);
+
+-- Indexes for new tables
+CREATE INDEX idx_classes_church ON classes(church_id);
+CREATE INDEX idx_classes_type ON classes(class_type_id);
+CREATE INDEX idx_class_grades_class ON class_grades(class_id);
+CREATE INDEX idx_class_servants_class ON class_servants(class_id);
+CREATE INDEX idx_class_servants_servant ON class_servants(servant_id);
+CREATE INDEX idx_sessions_class ON sessions(class_id);
+CREATE INDEX idx_sessions_date ON sessions(date);
+CREATE INDEX idx_sessions_class_date ON sessions(class_id, date);
+CREATE INDEX idx_availability_servant ON servant_availability(servant_id);
+CREATE INDEX idx_availability_date ON servant_availability(date);
+CREATE INDEX idx_availability_servant_date ON servant_availability(servant_id, date);
+```
+
+### How the Pieces Fit Together
+
+```
+Church
+  └── Class Types (Sunday School, Small Group, FNA, Bible Study)
+  └── Grades (5th Grade, 6th Grade, ...)
+        └── Students
+  └── Classes (recurring meetings)
+        ├── → Class Type (tag)
+        ├── → Grades (which students participate — can span multiple grades)
+        ├── → Servants (who is assigned)
+        └── Sessions (individual dates)
+              ├── Lesson topic, page, reference
+              ├── Location (override or default)
+              ├── Lesson-giver (servant)
+              └── Class admin
+
+Servants
+  └── Availability (per date, across all classes)
+  └── Class Assignments (which classes they serve)
+```
+
+### Key Queries
+
+```sql
+-- Servant dashboard: get upcoming sessions for the next 7 days
+-- for all classes a servant is assigned to
+SELECT
+  s.*,
+  c.name as class_name,
+  ct.name as class_type,
+  COALESCE(s.location_name, c.default_location) as location,
+  COALESCE(s.location_address, c.default_location_address) as address,
+  COALESCE(s.start_time, c.default_start_time) as start_time,
+  lesson_servant.full_name as lesson_giver_name
+FROM sessions s
+JOIN classes c ON s.class_id = c.id
+JOIN class_types ct ON c.class_type_id = ct.id
+LEFT JOIN profiles lesson_servant ON s.lesson_servant_id = lesson_servant.id
+WHERE s.class_id IN (
+  SELECT class_id FROM class_servants WHERE servant_id = $1
+)
+AND s.date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
+AND s.status != 'canceled'
+ORDER BY s.date, COALESCE(s.start_time, c.default_start_time);
+
+-- Who's unavailable for a given session's date?
+SELECT p.full_name
+FROM servant_availability sa
+JOIN profiles p ON sa.servant_id = p.id
+WHERE sa.date = $1            -- session date
+AND sa.available = false
+AND sa.servant_id IN (
+  SELECT servant_id FROM class_servants WHERE class_id = $2
+);
+
+-- Coordinator coverage view: dates with thin staffing
+SELECT
+  s.date,
+  c.name as class_name,
+  (SELECT COUNT(*) FROM class_servants cs WHERE cs.class_id = c.id) as total_servants,
+  (SELECT COUNT(*) FROM class_servants cs
+   WHERE cs.class_id = c.id
+   AND cs.servant_id NOT IN (
+     SELECT servant_id FROM servant_availability
+     WHERE date = s.date AND available = false
+   )) as available_servants
+FROM sessions s
+JOIN classes c ON s.class_id = c.id
+WHERE s.date >= CURRENT_DATE
+AND s.status != 'canceled'
+ORDER BY s.date;
+```
+
+### RLS Policies for New Tables
+
+```sql
+ALTER TABLE class_types ENABLE ROW LEVEL SECURITY;
+ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE class_grades ENABLE ROW LEVEL SECURITY;
+ALTER TABLE class_servants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE servant_availability ENABLE ROW LEVEL SECURITY;
+
+-- Sessions: servants read their classes, coordinators read/write all in church
+CREATE POLICY "Servants read their class sessions" ON sessions
+  FOR SELECT USING (
+    class_id IN (SELECT class_id FROM class_servants WHERE servant_id = auth.uid())
+  );
+
+CREATE POLICY "Coordinators manage sessions" ON sessions
+  FOR ALL USING (
+    class_id IN (
+      SELECT c.id FROM classes c
+      JOIN profiles p ON c.church_id = p.church_id
+      WHERE p.id = auth.uid() AND p.role IN ('coordinator', 'priest')
+    )
+  );
+
+-- Availability: servants manage their own, coordinators read all in church
+CREATE POLICY "Servants manage own availability" ON servant_availability
+  FOR ALL USING (servant_id = auth.uid());
+
+CREATE POLICY "Coordinators read availability" ON servant_availability
+  FOR SELECT USING (
+    servant_id IN (
+      SELECT p2.id FROM profiles p2
+      JOIN profiles p1 ON p1.church_id = p2.church_id
+      WHERE p1.id = auth.uid() AND p1.role IN ('coordinator', 'priest')
+    )
+  );
+
+-- Classes: servants read their assigned classes, coordinators manage all
+CREATE POLICY "Servants read their classes" ON classes
+  FOR SELECT USING (
+    id IN (SELECT class_id FROM class_servants WHERE servant_id = auth.uid())
+  );
+
+CREATE POLICY "Coordinators manage classes" ON classes
+  FOR ALL USING (
+    church_id IN (
+      SELECT church_id FROM profiles
+      WHERE id = auth.uid() AND role IN ('coordinator', 'priest')
+    )
+  );
+```
+
+### CSV Import for Curriculum
+
+Coordinators can upload a CSV (matching the format of the existing Master Schedule spreadsheet) to bulk-create sessions for a class. The app parses the CSV and creates one `sessions` row per date/lesson. Format:
+
+```
+Date, Lesson Topic, Page #, Scheduled Servant, Class Admin, Notes
+1-Mar, "Priesthood in the Old Testament VS. New Testament", 106, Revana Awadallah, Revana Awadallah,
+8-Mar, "The Gospel of the day - The Prodigal Son", Column F, Monica Zaky, Monica Zaky, Gospel of the day
+```
+
+The import matches servant names to existing `profiles` rows and creates sessions linked to the correct class.
 
 ---
 
