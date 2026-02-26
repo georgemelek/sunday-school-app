@@ -2,6 +2,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { RouteProp } from '@react-navigation/native'
 import type { Session } from '../hooks/useSessions'
 import type { Student } from '../hooks/useStudents'
+import type { AssignedKid } from '../hooks/useOutreach'
 
 // --- Servant Tab Navigator ---
 
@@ -9,6 +10,7 @@ export type ServantTabParamList = {
   DashboardTab: undefined
   GradesTab: undefined
   AvailabilityTab: undefined
+  OutreachTab: undefined
   SettingsTab: undefined
 }
 
@@ -36,6 +38,13 @@ export type AvailabilityStackParamList = {
   Availability: undefined
 }
 
+// --- Outreach Stack ---
+
+export type OutreachStackParamList = {
+  Outreach: undefined
+  OutreachDetail: { assignedKid: AssignedKid }
+}
+
 // --- Settings Stack ---
 
 export type SettingsStackParamList = {
@@ -47,6 +56,7 @@ export type SettingsStackParamList = {
 export type DashboardStackNavProp = NativeStackNavigationProp<DashboardStackParamList>
 export type GradesStackNavProp = NativeStackNavigationProp<GradesStackParamList>
 export type AvailabilityStackNavProp = NativeStackNavigationProp<AvailabilityStackParamList>
+export type OutreachStackNavProp = NativeStackNavigationProp<OutreachStackParamList>
 export type SettingsStackNavProp = NativeStackNavigationProp<SettingsStackParamList>
 
 // --- Route prop types ---

@@ -69,22 +69,6 @@ export default function DashboardScreen({
           <Text style={styles.dateText}>{formatTodayDate()}</Text>
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          {onNavigateToGrades && (
-            <TouchableOpacity style={styles.quickAction} onPress={onNavigateToGrades}>
-              <Text style={styles.quickActionIcon}>{'\u{1F4DA}'}</Text>
-              <Text style={styles.quickActionLabel}>My Grades</Text>
-            </TouchableOpacity>
-          )}
-          {onNavigateToAvailability && (
-            <TouchableOpacity style={styles.quickAction} onPress={onNavigateToAvailability}>
-              <Text style={styles.quickActionIcon}>{'\u{1F4C5}'}</Text>
-              <Text style={styles.quickActionLabel}>My Availability</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
         {/* Alerts */}
         {renderAlerts()}
 

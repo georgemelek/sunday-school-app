@@ -9,6 +9,7 @@ import type {
   DashboardStackParamList,
   GradesStackParamList,
   AvailabilityStackParamList,
+  OutreachStackParamList,
   SettingsStackParamList,
 } from '../types/navigation'
 
@@ -21,12 +22,16 @@ import EditStudentScreen from '../screens/servant/EditStudentScreen'
 import TakeAttendanceScreen from '../screens/servant/TakeAttendanceScreen'
 import SessionDetailScreen from '../screens/servant/SessionDetailScreen'
 import AvailabilityScreen from '../screens/servant/AvailabilityScreen'
+import OutreachScreen from '../screens/servant/OutreachScreen'
+import OutreachDetailScreen from '../screens/servant/OutreachDetailScreen'
+import { useOutreach } from '../hooks/useOutreach'
 
 // --- Stack Navigators ---
 
 const DashboardStack = createNativeStackNavigator<DashboardStackParamList>()
 const GradesStack = createNativeStackNavigator<GradesStackParamList>()
 const AvailabilityStack = createNativeStackNavigator<AvailabilityStackParamList>()
+const OutreachStack = createNativeStackNavigator<OutreachStackParamList>()
 const SettingsStack = createNativeStackNavigator<SettingsStackParamList>()
 const Tab = createBottomTabNavigator<ServantTabParamList>()
 
@@ -166,6 +171,42 @@ function AvailabilityStackNavigator() {
   )
 }
 
+// --- Outreach Tab Stack ---
+
+function OutreachStackNavigator() {
+  const { assignedKids, loading, refetch, logVisit } = useOutreach()
+
+  return (
+    <OutreachStack.Navigator screenOptions={{ headerShown: false }}>
+      <OutreachStack.Screen name="Outreach">
+        {({ navigation }) => (
+          <OutreachScreen
+            assignedKids={assignedKids}
+            loading={loading}
+            refetch={refetch}
+            onKidPress={(assignedKid) =>
+              navigation.navigate('OutreachDetail', { assignedKid })
+            }
+          />
+        )}
+      </OutreachStack.Screen>
+
+      <OutreachStack.Screen name="OutreachDetail">
+        {({ navigation, route }) => (
+          <OutreachDetailScreen
+            assignedKid={route.params.assignedKid}
+            onBack={() => navigation.goBack()}
+            onLogVisit={async (assignmentId, date, notes) => {
+              await logVisit(assignmentId, date, notes)
+              navigation.goBack()
+            }}
+          />
+        )}
+      </OutreachStack.Screen>
+    </OutreachStack.Navigator>
+  )
+}
+
 // --- Settings Tab Stack ---
 
 function SettingsPlaceholder() {
@@ -227,6 +268,16 @@ function ServantTabNavigator() {
             tabBarLabel: 'Availability',
             tabBarIcon: ({ color }) => (
               <Text style={{ fontSize: 20, color }}>{'📅'}</Text>
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="OutreachTab"
+          component={OutreachStackNavigator}
+          options={{
+            tabBarLabel: 'Outreach',
+            tabBarIcon: ({ color }) => (
+              <Text style={{ fontSize: 20, color }}>{'🤝'}</Text>
             ),
           }}
         />
