@@ -1,7 +1,7 @@
 # Sunday School App — Claude Code Context
 
 > This file is automatically loaded at the start of every Claude Code session.
-> Last updated: February 23, 2026
+> Last updated: March 3, 2026
 
 ---
 
@@ -55,16 +55,21 @@ When a servant logs in, they see a personalized feed of upcoming sessions across
 ## Current Project Status
 
 ### What's Built (UI with mock data)
-- **Week 1 (Foundation)**: Project setup, Supabase config, DB schema, auth screens (disabled — using placeholder nav), navigation structure
-- **Week 2 (Servant Flow)**: MyGradesScreen, GradeDetailScreen (with Students/Attendance tabs), AddStudent/EditStudent (shared StudentFormScreen), TakeAttendanceScreen, AttendanceHistoryView, all supporting hooks with mock data
+- **Foundation**: Project setup, Supabase config, DB schema, auth screens (disabled — using placeholder nav), navigation structure
+- **Servant Core**: MyGradesScreen, GradeDetailScreen (Students/Attendance tabs), AddStudent/EditStudent, TakeAttendanceScreen, AttendanceHistoryView
+- **Dashboard & Schedule**: DashboardScreen (greeting, upcoming sessions, staffing alerts), SessionCard, SessionDetailScreen, class/session mock data
+- **Availability**: AvailabilityScreen (toggle available/unavailable per date)
+- **Outreach**: OutreachScreen (kid list + progress), OutreachDetailScreen (contact actions, visit log), message templates
+- **Navigation**: 5 bottom tabs (Dashboard, My Grades, Availability, Outreach, Settings)
 
 ### What's NOT Built Yet
-- Servant dashboard (upcoming sessions, greeting, availability)
-- Class / Session / Schedule data model and UI
-- Servant availability tracking
+- Supabase integration (all screens use mock data)
+- Real authentication flow (using placeholder role selector)
+- Privacy policy, terms of service, COPPA compliance review
+- Dark mode
 - Coordinator flow (dashboard, reports, schedule management, CSV import)
-- Supabase integration (all screens currently use mock data)
-- Real authentication flow (commented out, using placeholder role selector)
+- Calendar views (dashboard + outreach)
+- On-device testing, beta, app store submission
 
 ### Approach
 **UI-first with mock data**, then a dedicated **Supabase Integration Phase** to wire everything up at once.
@@ -77,7 +82,7 @@ When a servant logs in, they see a personalized feed of upcoming sessions across
 | `IMPLEMENTATION_PLAN.md` | Task-level tracking with checkboxes. Current status of every task. |
 | `SUPABASE_SETUP.md` | Backend setup guide, migrations, auth config |
 | `apps/mobile/src/navigation/index.tsx` | Navigation hub — bottom tabs + stack navigators, role selector |
-| `apps/mobile/src/hooks/` | `useGrades.ts`, `useStudents.ts`, `useAttendance.ts` — all mock data hooks |
+| `apps/mobile/src/hooks/` | `useGrades`, `useStudents`, `useAttendance`, `useClasses`, `useSessions`, `useAvailability`, `useOutreach` — all mock data hooks |
 | `apps/mobile/src/screens/servant/` | All servant screens built so far |
 | `apps/mobile/src/components/` | Shared components (GradeCard, StudentListItem, AttendanceHistoryView) |
 
@@ -86,7 +91,7 @@ When a servant logs in, they see a personalized feed of upcoming sessions across
 - **Styling**: Primary `#007AFF`, secondary text `#666`, borders `#e0e0e0`, background `#f8f9fa`, error `#f44336`, present green `#4CAF50`, absent red `#f44336`
 - **Screen pattern**: Props interface with callbacks (`onBack`, `onSave`, etc.), header with paddingTop 60, back button "‹ Back" or "‹ Cancel"
 - **Hook pattern**: `useState` + `useEffect` fetch on mount, mock data with 500ms delay, commented-out Supabase queries with TODO markers
-- **Navigation**: Bottom tab navigator (`@react-navigation/bottom-tabs`) with 4 tabs (Dashboard, My Grades, Availability, Settings), each wrapping a native stack. Role selector is React state above `NavigationContainer`.
+- **Navigation**: Bottom tab navigator (`@react-navigation/bottom-tabs`) with 5 tabs (Dashboard, My Grades, Availability, Outreach, Settings), each wrapping a native stack. Role selector is React state above `NavigationContainer`.
 - **Forms**: Shared via mode prop (`'add' | 'edit'`), inline validation errors, footer save button with ActivityIndicator
 
 ## Real-World Context

@@ -71,11 +71,42 @@ export type AuthStackParamList = {
   Register: undefined
 }
 
-// --- Coordinator Stack (preserved for future use) ---
+// --- Coordinator Tab Navigator ---
 
-export type CoordinatorStackParamList = {
-  Dashboard: undefined
-  GradeAttendance: { gradeId: string; gradeName: string }
-  AttendanceReport: undefined
-  Profile: undefined
+export type CoordinatorTabParamList = {
+  DashboardTab: undefined
+  ScheduleTab: undefined
+  StaffingTab: undefined
+  SettingsTab: undefined
 }
+
+// --- Coordinator Dashboard Stack ---
+
+export type CoordDashboardStackParamList = {
+  Dashboard: undefined
+  AttendanceReport: undefined
+}
+
+// --- Coordinator Schedule Stack ---
+
+export type CoordScheduleStackParamList = {
+  Schedule: undefined
+  SessionList: { classId: string; className: string }
+  SessionForm: { classId: string; session?: Session }
+}
+
+// --- Coordinator Staffing Stack ---
+
+export type CoordStaffingStackParamList = {
+  Staffing: undefined
+}
+
+// --- Coordinator nav prop types ---
+
+export type CoordDashboardStackNavProp = NativeStackNavigationProp<CoordDashboardStackParamList>
+export type CoordScheduleStackNavProp = NativeStackNavigationProp<CoordScheduleStackParamList>
+export type CoordStaffingStackNavProp = NativeStackNavigationProp<CoordStaffingStackParamList>
+
+// --- Coordinator route prop types ---
+
+export type CoordScheduleStackRouteProp<T extends keyof CoordScheduleStackParamList> = RouteProp<CoordScheduleStackParamList, T>

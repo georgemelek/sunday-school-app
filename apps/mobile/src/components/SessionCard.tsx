@@ -25,7 +25,6 @@ export function SessionCard({
   const isToday = session.date === '2026-02-23'
   const isCanceled = session.status === 'canceled'
 
-  const dayLabel = formatDayLabel(session.date)
   const timeLabel = formatTimeRange(session.startTime, session.endTime)
 
   const availableCount = totalServants - unavailableServants.length
@@ -50,22 +49,19 @@ export function SessionCard({
       activeOpacity={onPress ? 0.7 : 1}
       onPress={onPress}
     >
-      {/* Date + Class type tag */}
+      {/* Lesson topic + class type tag */}
       <View style={styles.topRow}>
-        <Text style={[styles.dayLabel, isToday && styles.dayLabelToday]}>
-          {dayLabel}
-        </Text>
+        <View style={styles.topicWrapper}>
+          <Text style={[styles.topic, isCanceled && styles.topicCanceled]} numberOfLines={3}>
+            {session.lessonTopic}
+          </Text>
+        </View>
         {classTypeName ? (
           <View style={[styles.tag, { backgroundColor: tagColor + '18' }]}>
             <Text style={[styles.tagText, { color: tagColor }]}>{classTypeName}</Text>
           </View>
         ) : null}
       </View>
-
-      {/* Lesson topic */}
-      <Text style={[styles.topic, isCanceled && styles.topicCanceled]} numberOfLines={2}>
-        {session.lessonTopic}
-      </Text>
 
       {isCanceled && (
         <View style={styles.canceledBadge}>
@@ -151,27 +147,6 @@ const CLASS_TYPE_COLORS: Record<string, string> = {
   'Bible Study': '#34C759',
 }
 
-function formatDayLabel(dateStr: string): string {
-  const today = new Date('2026-02-23T12:00:00')
-  const date = new Date(dateStr + 'T12:00:00')
-  const diffDays = Math.round((date.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-
-  if (diffDays === 0) return 'Today'
-  if (diffDays === 1) return 'Tomorrow'
-
-  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const dayName = dayNames[date.getDay()]
-  const monthName = monthNames[date.getMonth()]
-  const dayNum = date.getDate()
-
-  if (diffDays > 1 && diffDays <= 6) {
-    return `${dayName}, ${monthName} ${dayNum}`
-  }
-
-  return `${dayName}, ${monthName} ${dayNum}`
-}
-
 function formatTimeRange(start: string, end: string): string {
   return `${formatTime(start)} – ${formatTime(end)}`
 }
@@ -207,18 +182,9 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  dayLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#666',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  dayLabelToday: {
-    color: '#007AFF',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+    gap: 10,
   },
   tag: {
     paddingHorizontal: 10,
@@ -229,11 +195,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  topicWrapper: {
+    flex: 1,
+  },
   topic: {
     fontSize: 17,
     fontWeight: '600',
     color: '#333',
-    marginBottom: 10,
     lineHeight: 22,
   },
   topicCanceled: {

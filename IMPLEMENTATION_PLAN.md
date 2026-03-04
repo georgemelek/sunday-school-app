@@ -1,461 +1,271 @@
 # Sunday School App - Implementation Plan
 
 **Status**: In Progress
-**Current Phase**: Week 2b - Servant Dashboard & Schedule UI
-**Last Updated**: February 23, 2026
+**Current Phase**: Phase 4 — Supabase Integration
+**Last Updated**: March 3, 2026
 
-**Approach**: Build all screens/UI with mock data first, then integrate Supabase for all operations in a dedicated integration phase.
+**Approach**: Built all servant UI with mock data first. Now preparing for Supabase integration, coordinator flow, and app store launch.
 
 ---
 
 ## Overview
 
-This document tracks all tasks needed to complete the app. The scope has expanded beyond basic attendance tracking to include **class/schedule management**, **servant availability**, and a **personalized servant dashboard** — replacing the Google Sheets currently used for curriculum schedules and availability tracking.
+This document tracks all tasks needed to complete the app. The scope includes **class/schedule management**, **servant availability**, a **personalized servant dashboard**, **1:1 outreach tracking**, and **coordinator tools** — replacing the Google Sheets currently used for curriculum schedules and availability tracking.
 
 See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisions.
 
 ---
 
-## ✅ Week 1: Foundation (COMPLETED)
+## Phase 1: Foundation (DONE)
 
 - [x] Project setup (Expo, TypeScript, dependencies)
 - [x] Supabase configuration
 - [x] Database schema and RLS policies
-- [x] Authentication screens (login/register) - *Auth flow disabled; using placeholder navigation for now*
-- [x] Navigation structure
+- [x] Authentication screens (login/register) — *Auth flow disabled; using placeholder role selector*
+- [x] Navigation structure (bottom tabs + native stacks)
 
 ---
 
-## ✅ Week 2a: Servant Flow — Core (COMPLETED - UI with mock data)
+## Phase 2: Servant Flow — Core UI (DONE — mock data)
 
-### ✅ Phase 1: Authentication Screens (DEFERRED)
-**Note**: Auth screens (Login/Register) are built. The navigation currently uses a placeholder screen for manual role selection. Full auth integration is deferred to the Supabase Integration phase.
+### Grade Management
+- [x] MyGradesScreen — grade list, create grade, navigation to detail, empty state, pull-to-refresh
+- [x] GradeDetailScreen — Students/Attendance tabs, add student, take attendance
 
-- [x] **Task 2.1**: Auth screens built (LoginScreen, RegisterScreen)
-- [ ] **Task 2.2**: Re-enable authentication flow — *Deferred to Supabase Integration*
-- [ ] **Task 2.3**: Test authentication edge cases — *Deferred to Supabase Integration*
+### Student Management
+- [x] AddStudentScreen / EditStudentScreen — shared StudentFormScreen, validation, all fields
+- [x] Student list in GradeDetailScreen — search, tap to edit, delete, sort
 
-### ✅ Phase 2: Grade Management (COMPLETED - UI with mock data)
-
-- [x] **Task 2.4**: Enhance MyGradesScreen
-  - Grade list display, "Create New Grade" button, navigation to GradeDetailScreen, empty state, pull-to-refresh
-- [x] **Task 2.5**: Create GradeDetailScreen
-  - Grade name/metadata, student list with Students/Attendance tabs, "Add Student" button, "Take Attendance" button
-- [x] **Task 2.6**: Create AddGrade Modal (in MyGradesScreen)
-  - Grade name form field, validation, mock create logic
-
-### ✅ Phase 3: Student Management (COMPLETED - UI with mock data)
-
-- [x] **Task 2.7**: Create AddStudentScreen
-  - All form fields (name, DOB, parent info, address, city, notes), validation, shared StudentFormScreen component
-- [x] **Task 2.8**: Create EditStudentScreen
-  - Pre-populated form via StudentFormScreen, update logic with mock data
-- [x] **Task 2.9**: Add student list features to GradeDetailScreen
-  - Search/filter, tap to edit, delete with confirmation, student count, sort by name
-
-### ✅ Phase 4: Attendance Tracking (COMPLETED - UI with mock data)
-
-- [x] **Task 2.10**: Create TakeAttendanceScreen
-  - Today's date, student list with present/absent toggles, notes per student, submit button, loading/success states
-- [x] **Task 2.11**: Mock attendance submission logic
-  - In-memory mock state, duplicate prevention, optimistic UI
-- [x] **Task 2.12**: View past attendance
-  - Students/Attendance tabs in GradeDetailScreen, AttendanceHistoryView component, by-date and by-student views, attendance percentage badges
+### Attendance Tracking
+- [x] TakeAttendanceScreen — date, student list with toggles, notes, submit
+- [x] AttendanceHistoryView — by-date and by-student views, percentage badges
 
 ---
 
-## 🚧 Week 2b: Servant Dashboard & Schedule (IN PROGRESS - UI with mock data)
+## Phase 3: Servant Dashboard & Features (DONE — mock data)
 
-> This is new scope. Adds the personalized servant dashboard, class/session data model, and availability tracking — replacing the Google Sheets currently used for curriculum schedules and servant availability.
+### Data Model & Mock Hooks
+- [x] `useClasses` hook — class types (Sunday School, Small Group, FNA, Bible Study), classes with servants/grades/schedules
+- [x] `useSessions` hook — sessions from real 6th grade curriculum CSV, lesson topics, assignments
+- [x] `useAvailability` hook — availability entries for George and co-servants, toggle available/unavailable
 
-### ✅ Phase 1: Data Model & Mock Hooks (COMPLETED)
+### Servant Dashboard
+- [x] DashboardScreen — time-aware greeting, upcoming sessions (14 days), staffing alerts
+- [x] SessionCard — class type tag, time, location (tappable for Maps), lesson info, who's teaching, who's out
+- [x] SessionDetailScreen — full lesson info, servant roster with availability, take attendance link
 
-- [x] **Task 2b.1**: Create mock data model for classes and sessions
-  - Create `useClasses` hook with mock data
-    - Class types: Sunday School, Small Group, FNA, Bible Study
-    - Classes: "6th Grade Sunday School", "6th Grade Boys Small Group", "5th & 6th Grade FNA", etc.
-    - Each class has: type/tag, default day/time, default location, assigned servants, linked grades
-  - Create `useSessions` hook with mock data
-    - Sessions populated from the real 6th grade curriculum CSV (Feb-Mar 2026 range for demo)
-    - Each session: date, lesson topic, page number, lesson giver, class admin, location, status
-  - Create `useAvailability` hook with mock data
-    - Mock availability entries for George and co-servants (from real availability tracker)
-    - CRUD: mark available/unavailable for a date
+### Availability Management
+- [x] AvailabilityScreen — list of upcoming dates with sessions, toggle available/unavailable per date
 
-### ✅ Phase 2: Servant Dashboard Screen (COMPLETED)
+### Outreach (1:1 Visitations)
+- [x] OutreachScreen — "Your Kids" list with progress card, visit badges
+- [x] OutreachDetailScreen — kid info, Call/Map/Message via Linking, visit history, log visit modal
+- [x] OutreachKidCard component — avatar, visit status badge, quick action buttons
+- [x] `useOutreach` hook — assignments, visits, logVisit
+- [x] Message templates utility — pre-filled SMS to parents
 
-- [x] **Task 2b.2**: Create ServantDashboardScreen
-  - Time-aware greeting ("Good morning/afternoon/evening, {name}")
-  - Replace MyGradesScreen as the servant home screen
-  - Navigation to existing grades/attendance flow still accessible
-  - *Use mock data for logged-in user (George Melek)*
-
-- [x] **Task 2b.3**: Upcoming sessions feed
-  - Show next 7 days of sessions across all the servant's classes
-  - Each session card shows:
-    - Class name + type tag (e.g., "6th Grade Boys — Small Group")
-    - Date and time
-    - Location (tappable — opens Maps if address is available)
-    - Lesson topic (if applicable, e.g., not for FNA)
-    - Who's giving the lesson
-    - Who's class admin
-  - If the servant is teaching: highlighted indicator ("You're teaching!")
-  - If the session is canceled: visual treatment + notes (e.g., "Canceled - Snow Storm")
-  - Empty state when no upcoming sessions
-
-- [x] **Task 2b.4**: Servant availability awareness on dashboard
-  - Show which co-servants are unavailable for each upcoming session
-  - e.g., "Revana and Steven will be out this week"
-  - If the servant themselves is marked out: "You've marked yourself unavailable for this session"
-  - Staffing alert if only 1-2 servants available: "Heads up: only 2 servants available"
-
-- [x] **Task 2b.5**: Session detail view
-  - Tapping a session card expands or navigates to detail
-  - Full lesson info: topic, page number, reference material/link
-  - Full servant roster with availability status for that date
-  - Location with tappable address
-  - Link to "Take Attendance" if it's a session for a grade the servant manages
-
-### Phase 3: Availability Management
-
-- [ ] **Task 2b.6**: Create AvailabilityScreen
-  - Calendar or list view of upcoming dates
-  - For each date, servant can toggle available/unavailable
-  - Show which sessions fall on that date so servant knows what they'd miss
-  - Optional notes field (e.g., "traveling")
-  - Save confirmation
-  - *Mock data — no Supabase*
-
-- [ ] **Task 2b.7**: Quick availability toggle from dashboard
-  - On each session card, a quick action to mark yourself out for that date
-  - Confirmation dialog: "Mark yourself unavailable for March 1st? This affects all your classes on that date."
-
-### Phase 4: Navigation Update
-
-- [x] **Task 2b.8**: Update navigation structure
-  - Replaced PlaceholderScreen state machine with @react-navigation/bottom-tabs
-  - Bottom tabs: Dashboard | My Grades | Availability | Settings (each with its own native stack)
-  - Dashboard quick actions switch tabs; session cards push within stack
-  - My Grades retains existing flow (grade list → detail → students/attendance)
+### Navigation
+- [x] Bottom tabs: Dashboard | My Grades | Availability | Outreach | Settings (each with native stack)
 
 ---
 
-## 📅 Week 3: Coordinator Flow (UI with mock data)
+## Phase 4: Supabase Integration (UP NEXT)
 
-### Phase 1: Dashboard
-
-- [ ] **Task 3.1**: Create CoordinatorDashboardScreen
-  - Overview cards:
-    - Total students across all grades
-    - Total classes in scope
-    - Overall attendance rate (last 30 days)
-    - Upcoming staffing gaps (dates with thin coverage)
-  - List of all classes with quick stats
-  - Navigation to class detail, reports, schedule management
-  - *Use mock data*
-
-- [ ] **Task 3.2**: Create AttendanceReportScreen
-  - Select grade/class dropdown
-  - Date range picker (start/end date)
-  - Display attendance data:
-    - List of students with attendance %
-    - Trend graph (optional for MVP)
-    - Export to CSV button (optional for MVP)
-  - Filter options
-  - *Use mock data*
-
-- [ ] **Task 3.3**: Real-time updates — *Deferred to Supabase Integration*
-
-### Phase 2: Schedule Management (Coordinator)
-
-- [ ] **Task 3.4**: Create ScheduleManagementScreen
-  - List of all classes the coordinator oversees
-  - Tap a class to see/edit its session schedule
-  - "Add Class" button to create a new class (type, name, default day/time/location, assigned grades and servants)
-  - *Use mock data*
-
-- [ ] **Task 3.5**: Create SessionListScreen (per class)
-  - Chronological list of sessions for a class
-  - Each row: date, lesson topic, lesson giver, status
-  - Tap to edit a session (topic, servant assignment, location, notes)
-  - "Add Session" to create individual sessions
-  - *Use mock data*
-
-- [ ] **Task 3.6**: Create CSV Import flow
-  - Button: "Import Schedule from CSV"
-  - File picker to select CSV
-  - Preview parsed sessions before confirming
-  - Map servant names from CSV to existing servant profiles
-  - Bulk-create sessions for the class
-  - Show success/error summary
-  - *Mock the import logic — parse CSV locally, create mock sessions*
-
-- [ ] **Task 3.7**: Staffing coverage view
-  - Calendar or list view showing upcoming dates
-  - For each date: how many servants are available vs. total assigned per class
-  - Color-coded: green (fully staffed), yellow (thin), red (critically understaffed)
-  - Tap a date to see who's in and who's out
-  - *Use mock data from availability tracker*
-
-### Phase 3: Church Invitation System (UI only)
-
-- [ ] **Task 3.8**: Create ChurchInvitationScreen
-  - Display current invitation codes
-  - "Generate New Code" button
-  - Set expiration date (optional)
-  - Set max uses (optional)
-  - Copy code to clipboard
-  - Share code via OS share sheet
-  - *Use mock data*
-
-- [ ] **Task 3.9**: Implement invitation code generation — *Deferred to Supabase Integration*
-
-- [ ] **Task 3.10**: Create JoinChurchScreen (Servant side UI)
-  - "Join Church" option in servant settings
-  - Input field for invitation code
-  - Success/error messages
-  - *Validation logic deferred to Supabase Integration*
-
-- [ ] **Task 3.11**: Church migration logic — *Deferred to Supabase Integration*
-
-### Phase 4: Polish
-
-- [ ] **Task 3.12**: Error handling UI
-  - Network error handling with retry
-  - Form validation errors
-  - Permission errors (RLS failures)
-  - User-friendly error messages
-
-- [ ] **Task 3.13**: Loading states
-  - Skeleton screens
-  - Loading spinners
-  - Pull-to-refresh indicators
-  - Button loading states
-
-- [ ] **Task 3.14**: Offline support (Optional for MVP) — *Deferred to Supabase Integration*
-
-- [ ] **Task 3.15**: Form validation
-  - Email format validation
-  - Phone number validation
-  - Required field indicators
-  - Real-time validation feedback
-
----
-
-## 📅 Supabase Integration Phase
-
-**Note**: This phase replaces mock data with real Supabase calls across the entire app. Tackle all at once after all UI screens are built.
+> Replace all mock data with real Supabase calls. This is the critical phase before any real testing.
 
 ### Authentication
-- [ ] **Task S.1**: Re-enable authentication flow
-  - Remove placeholder screen from `src/navigation/index.tsx`
-  - Uncomment NavigationContainer and navigator components
-  - Debug/fix boolean prop type error if it resurfaces
-  - Test full auth flow: register → login → role-based navigation
-
-- [ ] **Task S.2**: Test authentication edge cases
-  - Email validation, password strength, error handling
-  - Session persistence across app restarts
+- [ ] **S.1**: Re-enable auth flow — remove placeholder role selector, wire real login/register
+- [ ] **S.2**: Test auth edge cases — email validation, password strength, session persistence
 
 ### Database Migration
-- [ ] **Task S.3**: Run expanded schema migration
-  - Create new tables: `class_types`, `classes`, `class_grades`, `class_servants`, `sessions`, `servant_availability`
-  - Create indexes
-  - Apply RLS policies for new tables (see DESIGN.md section 4b)
+- [ ] **S.3**: Run expanded schema migration — new tables for classes, sessions, availability, outreach assignments, outreach visits
+- [ ] **S.4**: Apply RLS policies for all tables (see DESIGN.md)
 
 ### Data Operations
-- [ ] **Task S.4**: Grade CRUD integration
-  - Replace mock grade hooks with real Supabase queries
-  - Insert into `grades` table
-  - Auto-link servant to grade via `servant_grades` table
-  - Read, update, delete operations
-
-- [ ] **Task S.5**: Student CRUD integration
-  - Replace mock student hooks with real Supabase queries
-  - Insert/update/delete in `students` table
-  - Link students to grades
-
-- [ ] **Task S.6**: Attendance integration
-  - Batch insert into `attendance` table
-  - Duplicate prevention (one record per student per day)
-  - Read attendance history with date filtering
-  - Error handling with rollback
-
-- [ ] **Task S.7**: Class & session integration
-  - Replace mock class/session hooks with real Supabase queries
-  - CRUD for classes (coordinator only)
-  - CRUD for sessions (coordinator only)
-  - Read-only session queries for servants
-  - CSV import creates real session rows
-
-- [ ] **Task S.8**: Availability integration
-  - Replace mock availability hook with real Supabase queries
-  - Upsert into `servant_availability` table
-  - Query availability for a date range
-  - Cross-reference with class_servants for coverage calculations
-
-- [ ] **Task S.9**: Coordinator dashboard integration
-  - Real queries for dashboard stats (student count, class count, attendance rates)
-  - Attendance report queries with date range filtering
-  - Staffing coverage queries
-
-- [ ] **Task S.10**: Church invitation system integration
-  - Supabase Edge Function or RPC for code generation
-  - Insert into `church_invitations` table
-  - Validate invitation codes
-  - `migrate_user_to_church` RPC function
-
-- [ ] **Task S.11**: Real-time subscriptions
-  - Subscribe to attendance changes
-  - Subscribe to availability changes
-  - Update dashboard stats automatically
-
-- [ ] **Task S.12**: Offline support (Optional for MVP)
-  - Cache recent data with AsyncStorage
-  - Queue attendance submissions when offline
-  - Sync when back online
-  - Show offline indicator
+- [ ] **S.5**: Grade CRUD — replace mock hooks with real Supabase queries
+- [ ] **S.6**: Student CRUD — insert/update/delete in `students` table
+- [ ] **S.7**: Attendance — batch insert, duplicate prevention, history queries
+- [ ] **S.8**: Classes & sessions — CRUD (coordinator), read-only (servant), CSV import
+- [ ] **S.9**: Availability — upsert, date range queries, coverage calculations
+- [ ] **S.10**: Outreach — assignments, visit logging, progress queries
+- [ ] **S.11**: Real-time subscriptions — attendance, availability, session changes
 
 ---
 
-## 📅 Testing & Deployment
+## Phase 5: Privacy, Legal & Compliance
 
-### Phase 1: Testing
+> The app stores kids' names, parent contact info, and addresses. This needs to be handled carefully before any real data enters the system.
 
-- [ ] **Task T.1**: Local testing
-  - Test on iOS simulator
-  - Test on Android emulator
-  - Test on real iOS device
-  - Test on real Android device
+- [ ] **L.1**: Research compliance requirements
+  - COPPA (Children's Online Privacy Protection Act) — applies if kids under 13 can interact with the app
+  - State privacy laws (Illinois BIPA if biometric data, but likely N/A)
+  - Determine if COPPA applies (servants/parents are the users, not kids directly — likely exempt, but verify)
+- [ ] **L.2**: Draft and publish Privacy Policy
+  - What data is collected (student names, DOB, parent contact info, addresses, attendance)
+  - Who can access it (servants for their grades, coordinators for their scope)
+  - How it's stored (Supabase/PostgreSQL, encrypted at rest)
+  - Data retention and deletion policy
+  - Host on a simple web page (GitHub Pages or similar)
+- [ ] **L.3**: Draft and publish Terms of Service
+  - Acceptable use (church ministry purposes only)
+  - Data ownership (church owns the data, not the app)
+  - Liability limitations
+- [ ] **L.4**: Implement in-app consent
+  - First-login consent screen — user must agree to Privacy Policy + ToS before proceeding
+  - Link to full policies from Settings screen
+- [ ] **L.5**: Get church approval
+  - Present the app and privacy approach to Fr. Abouna / church board
+  - Get written permission to store student/family data digitally
+  - Determine if parents need to opt in (consent forms)
+- [ ] **L.6**: Data security review
+  - Verify Supabase RLS policies prevent cross-church/cross-grade data leaks
+  - Ensure no PII in logs or error messages
+  - Confirm HTTPS everywhere, encryption at rest
 
-- [ ] **Task T.2**: User role testing
-  - Create test accounts for each role (servant, coordinator, priest)
-  - Test all flows with each role
-  - Verify RLS policies work correctly
-  - Test permissions and data isolation
+---
 
-- [ ] **Task T.3**: Edge case testing
-  - Empty states (no grades, no students, no sessions)
-  - Large datasets (100+ students, full year of sessions)
-  - Network failures
-  - Concurrent updates (two servants editing same data)
-  - Invalid inputs
-  - CSV import with malformed data
+## Phase 6: Dark Mode
 
-- [ ] **Task T.4**: Bug fixes
-  - Create bug tracker (GitHub Issues or similar)
-  - Prioritize critical bugs
-  - Fix P0/P1 bugs before launch
-  - Document known issues for P2/P3
+- [ ] **D.1**: Create theme system
+  - Define light/dark color tokens (background, surface, text, borders, primary, status colors)
+  - Create a ThemeContext provider with `useTheme` hook
+  - Respect system preference via `useColorScheme()`, with manual override in Settings
+- [ ] **D.2**: Apply theme to all screens
+  - Update all StyleSheet definitions to use theme tokens
+  - Test every screen in both modes
+- [ ] **D.3**: Persist preference
+  - Save theme choice to AsyncStorage
+  - Load on app start
 
-### Phase 2: Beta Testing
+---
 
-- [ ] **Task T.5**: Prepare beta builds
-  - Set up EAS Build profiles
-  - Build iOS preview version
-  - Build Android preview version
-  - Upload to TestFlight (iOS)
-  - Upload to Google Play Internal Testing (Android)
+## Phase 7: Coordinator Flow (UI → then wire to Supabase)
 
-- [ ] **Task T.6**: Recruit beta testers
-  - 6th grade servant team (George, Fady, Revana, Monica, Steven, Koki, Sarah, John)
-  - Junior High coordinator
-  - Provide testing instructions
+### Dashboard
+- [ ] **C.1**: CoordinatorDashboardScreen — total students, classes, attendance rate, staffing gaps
+- [ ] **C.2**: AttendanceReportScreen — grade/class picker, date range, student attendance %, export to CSV
 
-- [ ] **Task T.7**: Gather feedback
-  - Create feedback form
-  - Track issues reported by testers
-  - Conduct user interviews
-  - Prioritize feedback for fixes
+### Schedule Management
+- [ ] **C.3**: ScheduleManagementScreen — list of classes, create/edit classes
+- [ ] **C.4**: SessionListScreen — sessions per class, edit session, add session
+- [ ] **C.5**: CSV import flow — file picker, preview, servant name matching, bulk create
+- [ ] **C.6**: Staffing coverage view — calendar with color-coded coverage per date
 
-### Phase 3: Production Deployment
+### Church Invitation System
+- [ ] **C.7**: ChurchInvitationScreen (coordinator) — generate codes, set expiry, share
+- [ ] **C.8**: JoinChurchScreen (servant) — enter invitation code, join church
 
-- [ ] **Task T.8**: Pre-launch checklist
+### Coordinator-specific Supabase integration
+- [ ] **C.9**: Wire coordinator dashboard, reports, schedule management, invitations to real queries
+
+---
+
+## Phase 8: Calendar Views
+
+- [ ] **Cal.1**: Dashboard calendar view — toggle between list and calendar for upcoming sessions
+- [ ] **Cal.2**: Outreach calendar view — see visit history and planned visits on a calendar
+- [ ] **Cal.3**: Consider a shared calendar component (react-native-calendars or similar)
+
+---
+
+## Phase 9: Local Testing (On-Device, 1-2 Weeks)
+
+> Build a dev version via EAS, install on George's and girlfriend's phones, and dogfood for 1-2 weeks with real data before beta.
+
+### Pre-requisites
+- [ ] **Test.1**: Configure `app.json` — bundle ID, app name, version, icons, splash screen
+- [ ] **Test.2**: Configure `eas.json` — development build profile
+- [ ] **Test.3**: Set up Apple Developer account ($99/year) for iOS dev builds
+- [ ] **Test.4**: Seed Supabase with real data — actual 6th grade students, curriculum, servant roster
+
+### Testing
+- [ ] **Test.5**: Build dev client via `eas build --profile development` (iOS + Android)
+- [ ] **Test.6**: Install on George's phone + girlfriend's phone
+- [ ] **Test.7**: Dogfood for 1-2 weeks — use the app for real Sunday School sessions
+  - Track real attendance
+  - Log real outreach visits
+  - Mark real availability
+  - Note bugs, UX issues, missing features
+- [ ] **Test.8**: Get coordinator feedback
+  - Demo the app to Junior High coordinator
+  - Ask: "What would make this useful for you?"
+  - Prioritize coordinator features based on real feedback
+
+---
+
+## Phase 10: Beta & Production
+
+### Beta Testing
+- [ ] **B.1**: Build preview versions (TestFlight for iOS, Google Play Internal Testing for Android)
+- [ ] **B.2**: Recruit beta testers — 6th grade servant team + coordinator
+- [ ] **B.3**: Gather feedback — feedback form, bug tracking, user interviews
+
+### App Store Prep
+- [ ] **B.4**: Pre-launch checklist
   - [ ] App icon finalized
   - [ ] Splash screen created
-  - [ ] Privacy policy published
-  - [ ] Terms of service published
+  - [ ] Privacy policy URL live
+  - [ ] Terms of service URL live
   - [ ] App store screenshots prepared
   - [ ] App descriptions written
   - [ ] Metadata (keywords, category) finalized
-
-- [ ] **Task T.9**: Build production versions
-  - Configure production environment variables
-  - Build iOS production version
-  - Build Android production version
-  - Test production builds
-
-- [ ] **Task T.10**: Submit to app stores
-  - Apple App Store submission
-  - Google Play Store submission
-  - Respond to review feedback if needed
-  - Monitor submission status
-
-- [ ] **Task T.11**: Launch preparation
-  - Prepare announcement
-  - Create user onboarding guide
-  - Set up support channels (email, etc.)
-  - Monitor Supabase for issues
+- [ ] **B.5**: Production builds + submission (App Store + Google Play)
+- [ ] **B.6**: Launch — announcement, onboarding guide, support channels
 
 ---
 
-## 🔮 Post-MVP Backlog
+## Post-Launch Backlog
 
-### Near-Term Enhancements
-- [ ] Visit tracking system (home visits)
+### Near-Term
 - [ ] Birthday notifications with push alerts
-- [ ] Parent portal (read-only access)
-- [ ] Multi-language support (Arabic, Coptic)
-- [ ] Student photos upload
-- [ ] Announcements from coordinators
-- [ ] Calendar integration (Google Calendar sync)
+- [ ] Parent portal (read-only access to attendance, schedule)
 - [ ] SMS/push reminders for upcoming sessions
+- [ ] Student photos
+- [ ] Announcements from coordinators
+- [ ] Google Calendar sync
 
 ### Longer-Term
+- [ ] Multi-language support (Arabic, Coptic)
 - [ ] Analytics dashboard (attendance trends, dropout alerts)
 - [ ] Bulk student import (CSV)
-- [ ] Multi-grade servant switching
-- [ ] Hierarchical permissions (Country → State → City → Church)
+- [ ] Multi-church support / hierarchical permissions
 - [ ] Custom PDF reports
-- [ ] Advanced analytics and data export
+- [ ] Offline support (cache + queue + sync)
 
 ---
 
-## 📊 Progress Tracking
+## Progress Summary
 
-### Current Status
-- **Completed**: Week 1 Foundation, Week 2a Servant Flow Core, Week 2b Phases 1-2 (dashboard, sessions, session detail)
-- **Up Next**: Week 2b Phase 3 — Availability Management (Task 2b.6, 2b.7)
-- **Deferred**: Auth flow re-enablement, all Supabase integration
-- **After That**: Week 2b Phase 4 (navigation update) → Week 3 Coordinator Flow → Supabase Integration → Testing & Deployment
-
-### Risks
-1. **Expanded scope**: The app is now significantly bigger than the original attendance-only MVP
-   - **Mitigation**: Still UI-first with mock data. Can ship a partial version if needed.
-2. **Mock-to-real migration complexity**: Replacing all mock data at once could surface many issues
-   - **Mitigation**: Keep hooks/services cleanly separated so swapping is straightforward
-3. **RLS complexity**: More tables means more policies to get right
-   - **Mitigation**: Thorough testing with multiple accounts during integration phase
-4. **CSV import edge cases**: Servant name matching, date parsing, malformed data
-   - **Mitigation**: Preview step before import, graceful error handling
+| Phase | Status |
+|-------|--------|
+| 1. Foundation | Done |
+| 2. Servant Core UI | Done |
+| 3. Servant Dashboard & Features | Done |
+| 4. Supabase Integration | Up Next |
+| 5. Privacy & Legal | Not Started |
+| 6. Dark Mode | Not Started |
+| 7. Coordinator Flow | Not Started |
+| 8. Calendar Views | Not Started |
+| 9. Local Testing | Blocked on Phase 4 |
+| 10. Beta & Production | Blocked on Phase 9 |
 
 ---
 
-## 🆘 Support Resources
+## Risks
+
+1. **COPPA / legal uncertainty** — Need to confirm whether the app qualifies as "directed to children." Likely exempt since servants/parents are the users, but should verify before storing real kid data.
+2. **Mock-to-real migration** — Replacing all mock data at once could surface many issues. Mitigated by clean hook/service separation.
+3. **Coordinator buy-in** — Building coordinator features without direct input risks building the wrong thing. Phase 9 (Test.8) addresses this.
+4. **Apple Developer cost** — $99/year required for any iOS testing beyond Expo Go.
+
+---
+
+## Resources
 
 - **Supabase Docs**: https://supabase.com/docs
 - **Expo Docs**: https://docs.expo.dev
 - **React Navigation**: https://reactnavigation.org
+- **EAS Build**: https://docs.expo.dev/build/introduction/
 - **Project Design Doc**: `DESIGN.md`
 - **Database Setup**: `SUPABASE_SETUP.md`
 - **Session Context**: `CLAUDE.md`
-
----
-
-## Notes
-
-- This plan assumes 1 developer working part-time with Claude Code assistance
-- Each task includes implementation + testing time
-- Mark tasks as completed using `[x]` checkbox syntax
-- All UI screens use mock data/hooks until the Supabase Integration Phase
-- Reference spreadsheets for mock data: `~/Downloads/25-26 JH Master.xlsx - 06 Grade.csv` and `~/Downloads/25-26 Servants Availability Tracker - 6th .csv`

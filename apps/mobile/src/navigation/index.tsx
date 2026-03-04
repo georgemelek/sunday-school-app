@@ -11,6 +11,10 @@ import type {
   AvailabilityStackParamList,
   OutreachStackParamList,
   SettingsStackParamList,
+  CoordinatorTabParamList,
+  CoordDashboardStackParamList,
+  CoordScheduleStackParamList,
+  CoordStaffingStackParamList,
 } from '../types/navigation'
 
 // Servant screens
@@ -26,7 +30,17 @@ import OutreachScreen from '../screens/servant/OutreachScreen'
 import OutreachDetailScreen from '../screens/servant/OutreachDetailScreen'
 import { useOutreach } from '../hooks/useOutreach'
 
-// --- Stack Navigators ---
+// Coordinator screens
+import CoordinatorDashboardScreen from '../screens/coordinator/CoordinatorDashboardScreen'
+import AttendanceReportScreen from '../screens/coordinator/AttendanceReportScreen'
+import ScheduleScreen from '../screens/coordinator/ScheduleScreen'
+import SessionListScreen from '../screens/coordinator/SessionListScreen'
+import SessionFormScreen from '../screens/coordinator/SessionFormScreen'
+import StaffingScreen from '../screens/coordinator/StaffingScreen'
+
+import { useClasses } from '../hooks/useClasses'
+
+// --- Servant Stack Navigators ---
 
 const DashboardStack = createNativeStackNavigator<DashboardStackParamList>()
 const GradesStack = createNativeStackNavigator<GradesStackParamList>()
@@ -34,6 +48,13 @@ const AvailabilityStack = createNativeStackNavigator<AvailabilityStackParamList>
 const OutreachStack = createNativeStackNavigator<OutreachStackParamList>()
 const SettingsStack = createNativeStackNavigator<SettingsStackParamList>()
 const Tab = createBottomTabNavigator<ServantTabParamList>()
+
+// --- Coordinator Stack Navigators ---
+
+const CoordDashboardStack = createNativeStackNavigator<CoordDashboardStackParamList>()
+const CoordScheduleStack = createNativeStackNavigator<CoordScheduleStackParamList>()
+const CoordStaffingStack = createNativeStackNavigator<CoordStaffingStackParamList>()
+const CoordTab = createBottomTabNavigator<CoordinatorTabParamList>()
 
 // --- Dashboard Tab Stack ---
 
@@ -247,7 +268,7 @@ function ServantTabNavigator() {
           options={{
             tabBarLabel: 'Dashboard',
             tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 20, color }}>{'🏠'}</Text>
+              <Text style={{ fontSize: 20, color }}>{'\uD83C\uDFE0'}</Text>
             ),
           }}
         />
@@ -257,7 +278,7 @@ function ServantTabNavigator() {
           options={{
             tabBarLabel: 'My Grades',
             tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 20, color }}>{'📚'}</Text>
+              <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCDA'}</Text>
             ),
           }}
         />
@@ -267,7 +288,7 @@ function ServantTabNavigator() {
           options={{
             tabBarLabel: 'Availability',
             tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 20, color }}>{'📅'}</Text>
+              <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCC5'}</Text>
             ),
           }}
         />
@@ -277,7 +298,7 @@ function ServantTabNavigator() {
           options={{
             tabBarLabel: 'Outreach',
             tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 20, color }}>{'🤝'}</Text>
+              <Text style={{ fontSize: 20, color }}>{'\uD83E\uDD1D'}</Text>
             ),
           }}
         />
@@ -287,11 +308,168 @@ function ServantTabNavigator() {
           options={{
             tabBarLabel: 'Settings',
             tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 20, color }}>{'⚙️'}</Text>
+              <Text style={{ fontSize: 20, color }}>{'\u2699\uFE0F'}</Text>
             ),
           }}
         />
       </Tab.Navigator>
+    </NavigationContainer>
+  )
+}
+
+// --- Coordinator Dashboard Stack ---
+
+function CoordDashboardStackNavigator() {
+  return (
+    <CoordDashboardStack.Navigator screenOptions={{ headerShown: false }}>
+      <CoordDashboardStack.Screen name="Dashboard">
+        {({ navigation }) => (
+          <CoordinatorDashboardScreen
+            onClassPress={(classId) => {
+              navigation.getParent()?.navigate('ScheduleTab')
+            }}
+            onViewReport={() => navigation.navigate('AttendanceReport')}
+            onViewStaffing={() => {
+              navigation.getParent()?.navigate('StaffingTab')
+            }}
+          />
+        )}
+      </CoordDashboardStack.Screen>
+
+      <CoordDashboardStack.Screen name="AttendanceReport">
+        {({ navigation }) => (
+          <AttendanceReportScreen onBack={() => navigation.goBack()} />
+        )}
+      </CoordDashboardStack.Screen>
+    </CoordDashboardStack.Navigator>
+  )
+}
+
+// --- Coordinator Schedule Stack ---
+
+function CoordScheduleStackNavigator() {
+  const { getClassById, getServantsByClassId } = useClasses()
+
+  return (
+    <CoordScheduleStack.Navigator screenOptions={{ headerShown: false }}>
+      <CoordScheduleStack.Screen name="Schedule">
+        {({ navigation }) => (
+          <ScheduleScreen
+            onClassPress={(classId, className) =>
+              navigation.navigate('SessionList', { classId, className })
+            }
+          />
+        )}
+      </CoordScheduleStack.Screen>
+
+      <CoordScheduleStack.Screen name="SessionList">
+        {({ navigation, route }) => (
+          <SessionListScreen
+            classId={route.params.classId}
+            className={route.params.className}
+            onBack={() => navigation.goBack()}
+            onSessionPress={(session) =>
+              navigation.navigate('SessionForm', {
+                classId: route.params.classId,
+                session,
+              })
+            }
+            onAddSession={(classId) =>
+              navigation.navigate('SessionForm', { classId })
+            }
+          />
+        )}
+      </CoordScheduleStack.Screen>
+
+      <CoordScheduleStack.Screen name="SessionForm">
+        {({ navigation, route }) => {
+          const cls = getClassById(route.params.classId)
+          const servants = cls ? getServantsByClassId(cls.id) : []
+
+          return (
+            <SessionFormScreen
+              classId={route.params.classId}
+              session={route.params.session}
+              servants={servants}
+              defaultLocation={cls?.defaultLocation}
+              defaultLocationAddress={cls?.defaultLocationAddress}
+              onBack={() => navigation.goBack()}
+              onSave={() => navigation.goBack()}
+              onDelete={() => navigation.goBack()}
+            />
+          )
+        }}
+      </CoordScheduleStack.Screen>
+    </CoordScheduleStack.Navigator>
+  )
+}
+
+// --- Coordinator Staffing Stack ---
+
+function CoordStaffingStackNavigator() {
+  return (
+    <CoordStaffingStack.Navigator screenOptions={{ headerShown: false }}>
+      <CoordStaffingStack.Screen name="Staffing" component={StaffingScreen} />
+    </CoordStaffingStack.Navigator>
+  )
+}
+
+// --- Coordinator Tab Navigator ---
+
+function CoordinatorTabNavigator() {
+  return (
+    <NavigationContainer>
+      <CoordTab.Navigator
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: '#007AFF',
+          tabBarInactiveTintColor: '#999',
+          tabBarStyle: {
+            borderTopColor: '#e0e0e0',
+          },
+        }}
+      >
+        <CoordTab.Screen
+          name="DashboardTab"
+          component={CoordDashboardStackNavigator}
+          options={{
+            tabBarLabel: 'Dashboard',
+            tabBarIcon: ({ color }) => (
+              <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCCA'}</Text>
+            ),
+          }}
+        />
+        <CoordTab.Screen
+          name="ScheduleTab"
+          component={CoordScheduleStackNavigator}
+          options={{
+            tabBarLabel: 'Schedule',
+            tabBarIcon: ({ color }) => (
+              <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCC5'}</Text>
+            ),
+          }}
+        />
+        <CoordTab.Screen
+          name="StaffingTab"
+          component={CoordStaffingStackNavigator}
+          options={{
+            tabBarLabel: 'Staffing',
+            tabBarIcon: ({ color }) => (
+              <Text style={{ fontSize: 20, color }}>{'\uD83D\uDC65'}</Text>
+            ),
+          }}
+        />
+        <CoordTab.Screen
+          name="SettingsTab"
+          component={SettingsStackNavigator}
+          options={{
+            tabBarLabel: 'Settings',
+            tabBarIcon: ({ color }) => (
+              <Text style={{ fontSize: 20, color }}>{'\u2699\uFE0F'}</Text>
+            ),
+          }}
+        />
+      </CoordTab.Navigator>
     </NavigationContainer>
   )
 }
@@ -306,17 +484,7 @@ export default function RootNavigator() {
   }
 
   if (selectedRole === 'coordinator') {
-    return (
-      <View style={styles.placeholderContainer}>
-        <Text style={styles.title}>Coordinator Screen Coming Soon</Text>
-        <TouchableOpacity
-          style={styles.backLink}
-          onPress={() => setSelectedRole(null)}
-        >
-          <Text style={styles.backLinkText}>{'\u2039'} Back to role selector</Text>
-        </TouchableOpacity>
-      </View>
-    )
+    return <CoordinatorTabNavigator />
   }
 
   return (
@@ -399,12 +567,5 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: 16,
     color: '#666',
-  },
-  backLink: {
-    marginTop: 20,
-  },
-  backLinkText: {
-    fontSize: 16,
-    color: '#007AFF',
   },
 })
