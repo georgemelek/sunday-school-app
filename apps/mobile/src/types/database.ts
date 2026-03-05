@@ -616,52 +616,70 @@ export type Database = {
       }
       students: {
         Row: {
-          address: string | null
           city: string | null
+          country: string | null
           created_at: string | null
           created_by: string | null
           date_of_birth: string | null
+          father_email: string | null
+          father_phone: string | null
+          first_name: string | null
           gender: string | null
           grade_id: string | null
           id: string
-          name: string
+          last_name: string | null
+          mother_email: string | null
+          mother_phone: string | null
           notes: string | null
-          parent_email: string | null
-          parent_name: string | null
-          parent_phone: string | null
+          state: string | null
+          street: string | null
+          student_phone: string | null
           updated_at: string | null
+          zip: string | null
         }
         Insert: {
-          address?: string | null
           city?: string | null
+          country?: string | null
           created_at?: string | null
           created_by?: string | null
           date_of_birth?: string | null
+          father_email?: string | null
+          father_phone?: string | null
+          first_name?: string | null
           gender?: string | null
           grade_id?: string | null
           id?: string
-          name: string
+          last_name?: string | null
+          mother_email?: string | null
+          mother_phone?: string | null
           notes?: string | null
-          parent_email?: string | null
-          parent_name?: string | null
-          parent_phone?: string | null
+          state?: string | null
+          street?: string | null
+          student_phone?: string | null
           updated_at?: string | null
+          zip?: string | null
         }
         Update: {
-          address?: string | null
           city?: string | null
+          country?: string | null
           created_at?: string | null
           created_by?: string | null
           date_of_birth?: string | null
+          father_email?: string | null
+          father_phone?: string | null
+          first_name?: string | null
           gender?: string | null
           grade_id?: string | null
           id?: string
-          name?: string
+          last_name?: string | null
+          mother_email?: string | null
+          mother_phone?: string | null
           notes?: string | null
-          parent_email?: string | null
-          parent_name?: string | null
-          parent_phone?: string | null
+          state?: string | null
+          street?: string | null
+          student_phone?: string | null
           updated_at?: string | null
+          zip?: string | null
         }
         Relationships: [
           {
