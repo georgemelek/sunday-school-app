@@ -1,10 +1,11 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
-import { NavigationContainer } from '@react-navigation/native'
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native'
+import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 
 import type {
+  AuthStackParamList,
   ServantTabParamList,
   DashboardStackParamList,
   GradesStackParamList,
@@ -16,6 +17,16 @@ import type {
   CoordScheduleStackParamList,
   CoordStaffingStackParamList,
 } from '../types/navigation'
+
+// Auth
+import { useAuth } from '../contexts/AuthContext'
+
+// Theme
+import { useTheme, useThemedStyles, ThemeColors, ThemePreference } from '../theme'
+
+// Auth screens
+import LoginScreen from '../screens/auth/LoginScreen'
+import RegisterScreen from '../screens/auth/RegisterScreen'
 
 // Servant screens
 import DashboardScreen from '../screens/servant/DashboardScreen'
@@ -40,16 +51,15 @@ import StaffingScreen from '../screens/coordinator/StaffingScreen'
 
 import { useClasses } from '../hooks/useClasses'
 
-// --- Servant Stack Navigators ---
+// --- Stack / Tab Navigators ---
 
+const AuthStack = createNativeStackNavigator<AuthStackParamList>()
 const DashboardStack = createNativeStackNavigator<DashboardStackParamList>()
 const GradesStack = createNativeStackNavigator<GradesStackParamList>()
 const AvailabilityStack = createNativeStackNavigator<AvailabilityStackParamList>()
 const OutreachStack = createNativeStackNavigator<OutreachStackParamList>()
 const SettingsStack = createNativeStackNavigator<SettingsStackParamList>()
 const Tab = createBottomTabNavigator<ServantTabParamList>()
-
-// --- Coordinator Stack Navigators ---
 
 const CoordDashboardStack = createNativeStackNavigator<CoordDashboardStackParamList>()
 const CoordScheduleStack = createNativeStackNavigator<CoordScheduleStackParamList>()
@@ -228,92 +238,295 @@ function OutreachStackNavigator() {
   )
 }
 
-// --- Settings Tab Stack ---
+// --- Settings Screen ---
 
-function SettingsPlaceholder() {
+function SettingsScreen({ isTourMode, onSignIn }: { isTourMode?: boolean; onSignIn?: () => void }) {
+  const { colors, preference, setPreference } = useTheme()
+  const { session, profile, signOut } = useAuth()
+  const styles = useThemedStyles(createSettingsStyles)
+
+  const themeOptions: { key: ThemePreference; label: string }[] = [
+    { key: 'system', label: 'System' },
+    { key: 'light', label: 'Light' },
+    { key: 'dark', label: 'Dark' },
+  ]
+
+  async function handleSignOut() {
+    try {
+      await signOut()
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to sign out')
+    }
+  }
+
   return (
-    <View style={styles.placeholderContainer}>
-      <Text style={styles.placeholderTitle}>Settings</Text>
-      <Text style={styles.placeholderText}>Coming soon</Text>
-    </View>
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Settings</Text>
+      </View>
+
+      {/* User profile section (authenticated) */}
+      {session && profile && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Account</Text>
+          <View style={styles.profileCard}>
+            <Text style={styles.profileName}>{profile.full_name}</Text>
+            <Text style={styles.profileDetail}>{session.user.email}</Text>
+            <Text style={styles.profileRole}>
+              {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Tour mode banner */}
+      {isTourMode && (
+        <View style={styles.section}>
+          <View style={styles.tourBanner}>
+            <Text style={styles.tourBannerText}>
+              You're exploring the app in demo mode. Sign in to access your real data.
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Appearance */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Appearance</Text>
+        <View style={styles.optionGroup}>
+          {themeOptions.map(opt => (
+            <TouchableOpacity
+              key={opt.key}
+              style={[styles.optionRow, preference === opt.key && styles.optionRowSelected]}
+              onPress={() => setPreference(opt.key)}
+            >
+              <Text style={[styles.optionLabel, preference === opt.key && styles.optionLabelSelected]}>
+                {opt.label}
+              </Text>
+              {preference === opt.key && (
+                <Text style={styles.checkmark}>{'\u2713'}</Text>
+              )}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Sign Out / Sign In */}
+      <View style={styles.section}>
+        {isTourMode ? (
+          <TouchableOpacity style={styles.signInButton} onPress={onSignIn}>
+            <Text style={styles.signInButtonText}>Sign In</Text>
+          </TouchableOpacity>
+        ) : session ? (
+          <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+            <Text style={styles.signOutButtonText}>Sign Out</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+    </ScrollView>
   )
 }
 
-function SettingsStackNavigator() {
+const createSettingsStyles = (colors: ThemeColors) => ({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  } as const,
+  header: {
+    padding: 20,
+    paddingTop: 60,
+    paddingBottom: 12,
+    backgroundColor: colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  } as const,
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
+  },
+  section: {
+    padding: 16,
+  } as const,
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: colors.textSecondary,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  profileCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    padding: 16,
+  } as const,
+  profileName: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  profileDetail: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 4,
+  },
+  profileRole: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500' as const,
+  },
+  tourBanner: {
+    backgroundColor: colors.alertInfoBg,
+    borderWidth: 1,
+    borderColor: colors.alertInfoBorder,
+    borderRadius: 12,
+    padding: 16,
+  } as const,
+  tourBannerText: {
+    fontSize: 14,
+    color: colors.textPrimary,
+    lineHeight: 20,
+  },
+  optionGroup: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    overflow: 'hidden' as const,
+  },
+  optionRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+  },
+  optionRowSelected: {
+    backgroundColor: colors.primary + '10',
+  },
+  optionLabel: {
+    fontSize: 16,
+    color: colors.textPrimary,
+  },
+  optionLabelSelected: {
+    fontWeight: '600' as const,
+    color: colors.onPrimaryText,
+  },
+  checkmark: {
+    fontSize: 18,
+    fontWeight: '600' as const,
+    color: colors.onPrimaryText,
+  },
+  signInButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center' as const,
+  },
+  signInButtonText: {
+    color: colors.primaryText,
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  signOutButton: {
+    borderWidth: 2,
+    borderColor: colors.error,
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center' as const,
+  },
+  signOutButtonText: {
+    color: colors.error,
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+})
+
+function SettingsStackNavigator({ isTourMode, onSignIn }: { isTourMode?: boolean; onSignIn?: () => void }) {
   return (
     <SettingsStack.Navigator screenOptions={{ headerShown: false }}>
-      <SettingsStack.Screen name="Settings" component={SettingsPlaceholder} />
+      <SettingsStack.Screen name="Settings">
+        {() => <SettingsScreen isTourMode={isTourMode} onSignIn={onSignIn} />}
+      </SettingsStack.Screen>
     </SettingsStack.Navigator>
   )
 }
 
 // --- Servant Tab Navigator ---
 
-function ServantTabNavigator() {
+function ServantTabNavigator({ isTourMode, onSignIn }: { isTourMode?: boolean; onSignIn?: () => void }) {
+  const { colors } = useTheme()
+
   return (
-    <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: '#007AFF',
-          tabBarInactiveTintColor: '#999',
-          tabBarStyle: {
-            borderTopColor: '#e0e0e0',
-          },
+    <Tab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.tabBarActiveTint,
+        tabBarInactiveTintColor: colors.tabBarInactiveTint,
+        tabBarStyle: {
+          backgroundColor: colors.tabBarBackground,
+          borderTopColor: colors.tabBarBorder,
+        },
+      }}
+    >
+      <Tab.Screen
+        name="DashboardTab"
+        component={DashboardStackNavigator}
+        options={{
+          tabBarLabel: 'Dashboard',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 20, color }}>{'\uD83C\uDFE0'}</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="GradesTab"
+        component={GradesStackNavigator}
+        options={{
+          tabBarLabel: 'My Grades',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCDA'}</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="AvailabilityTab"
+        component={AvailabilityStackNavigator}
+        options={{
+          tabBarLabel: 'Availability',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCC5'}</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="OutreachTab"
+        component={OutreachStackNavigator}
+        options={{
+          tabBarLabel: 'Outreach',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 20, color }}>{'\uD83E\uDD1D'}</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="SettingsTab"
+        options={{
+          tabBarLabel: 'Settings',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 20, color }}>{'\u2699\uFE0F'}</Text>
+          ),
         }}
       >
-        <Tab.Screen
-          name="DashboardTab"
-          component={DashboardStackNavigator}
-          options={{
-            tabBarLabel: 'Dashboard',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 20, color }}>{'\uD83C\uDFE0'}</Text>
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="GradesTab"
-          component={GradesStackNavigator}
-          options={{
-            tabBarLabel: 'My Grades',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCDA'}</Text>
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="AvailabilityTab"
-          component={AvailabilityStackNavigator}
-          options={{
-            tabBarLabel: 'Availability',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCC5'}</Text>
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="OutreachTab"
-          component={OutreachStackNavigator}
-          options={{
-            tabBarLabel: 'Outreach',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 20, color }}>{'\uD83E\uDD1D'}</Text>
-            ),
-          }}
-        />
-        <Tab.Screen
-          name="SettingsTab"
-          component={SettingsStackNavigator}
-          options={{
-            tabBarLabel: 'Settings',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 20, color }}>{'\u2699\uFE0F'}</Text>
-            ),
-          }}
-        />
-      </Tab.Navigator>
-    </NavigationContainer>
+        {() => <SettingsStackNavigator isTourMode={isTourMode} onSignIn={onSignIn} />}
+      </Tab.Screen>
+    </Tab.Navigator>
   )
 }
 
@@ -417,155 +630,148 @@ function CoordStaffingStackNavigator() {
 // --- Coordinator Tab Navigator ---
 
 function CoordinatorTabNavigator() {
+  const { colors } = useTheme()
+
   return (
-    <NavigationContainer>
-      <CoordTab.Navigator
-        screenOptions={{
-          headerShown: false,
-          tabBarActiveTintColor: '#007AFF',
-          tabBarInactiveTintColor: '#999',
-          tabBarStyle: {
-            borderTopColor: '#e0e0e0',
-          },
+    <CoordTab.Navigator
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.tabBarActiveTint,
+        tabBarInactiveTintColor: colors.tabBarInactiveTint,
+        tabBarStyle: {
+          backgroundColor: colors.tabBarBackground,
+          borderTopColor: colors.tabBarBorder,
+        },
+      }}
+    >
+      <CoordTab.Screen
+        name="DashboardTab"
+        component={CoordDashboardStackNavigator}
+        options={{
+          tabBarLabel: 'Dashboard',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCCA'}</Text>
+          ),
+        }}
+      />
+      <CoordTab.Screen
+        name="ScheduleTab"
+        component={CoordScheduleStackNavigator}
+        options={{
+          tabBarLabel: 'Schedule',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCC5'}</Text>
+          ),
+        }}
+      />
+      <CoordTab.Screen
+        name="StaffingTab"
+        component={CoordStaffingStackNavigator}
+        options={{
+          tabBarLabel: 'Staffing',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 20, color }}>{'\uD83D\uDC65'}</Text>
+          ),
+        }}
+      />
+      <CoordTab.Screen
+        name="SettingsTab"
+        options={{
+          tabBarLabel: 'Settings',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 20, color }}>{'\u2699\uFE0F'}</Text>
+          ),
         }}
       >
-        <CoordTab.Screen
-          name="DashboardTab"
-          component={CoordDashboardStackNavigator}
-          options={{
-            tabBarLabel: 'Dashboard',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCCA'}</Text>
-            ),
-          }}
-        />
-        <CoordTab.Screen
-          name="ScheduleTab"
-          component={CoordScheduleStackNavigator}
-          options={{
-            tabBarLabel: 'Schedule',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCC5'}</Text>
-            ),
-          }}
-        />
-        <CoordTab.Screen
-          name="StaffingTab"
-          component={CoordStaffingStackNavigator}
-          options={{
-            tabBarLabel: 'Staffing',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 20, color }}>{'\uD83D\uDC65'}</Text>
-            ),
-          }}
-        />
-        <CoordTab.Screen
-          name="SettingsTab"
-          component={SettingsStackNavigator}
-          options={{
-            tabBarLabel: 'Settings',
-            tabBarIcon: ({ color }) => (
-              <Text style={{ fontSize: 20, color }}>{'\u2699\uFE0F'}</Text>
-            ),
-          }}
-        />
-      </CoordTab.Navigator>
+        {() => <SettingsStackNavigator />}
+      </CoordTab.Screen>
+    </CoordTab.Navigator>
+  )
+}
+
+// --- Auth Stack Navigator ---
+
+function AuthStackNavigator({ onTakeTour }: { onTakeTour: () => void }) {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login">
+        {(props) => <LoginScreen {...props} onTakeTour={onTakeTour} />}
+      </AuthStack.Screen>
+      <AuthStack.Screen name="Register" component={RegisterScreen} />
+    </AuthStack.Navigator>
+  )
+}
+
+// --- Root Navigator ---
+
+export default function RootNavigator() {
+  const { session, profile, loading, refreshProfile } = useAuth()
+  const { colors, isDark } = useTheme()
+  const [isTourMode, setIsTourMode] = React.useState(false)
+
+  const navTheme = isDark
+    ? { ...DarkTheme, colors: { ...DarkTheme.colors, background: colors.background, card: colors.card } }
+    : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: colors.background, card: colors.card } }
+
+  // Auth loading state
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    )
+  }
+
+  // Tour mode — show servant tab navigator with mock data
+  if (!session && isTourMode) {
+    return (
+      <NavigationContainer theme={navTheme}>
+        <ServantTabNavigator isTourMode onSignIn={() => setIsTourMode(false)} />
+      </NavigationContainer>
+    )
+  }
+
+  // Not authenticated — show auth stack
+  if (!session) {
+    return (
+      <NavigationContainer theme={navTheme}>
+        <AuthStackNavigator onTakeTour={() => setIsTourMode(true)} />
+      </NavigationContainer>
+    )
+  }
+
+  // Authenticated but no profile — error state
+  if (!profile) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background, padding: 20 }}>
+        <Text style={{ fontSize: 18, fontWeight: '600', color: colors.textPrimary, marginBottom: 8, textAlign: 'center' }}>
+          Profile Not Found
+        </Text>
+        <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 24 }}>
+          We couldn't load your profile. This may happen if your account was just created.
+        </Text>
+        <TouchableOpacity
+          style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 24, paddingVertical: 12 }}
+          onPress={() => refreshProfile()}
+        >
+          <Text style={{ color: colors.primaryText, fontSize: 16, fontWeight: '600' }}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
+
+  // Authenticated with profile — route by role
+  if (profile.role === 'coordinator' || profile.role === 'priest') {
+    return (
+      <NavigationContainer theme={navTheme}>
+        <CoordinatorTabNavigator />
+      </NavigationContainer>
+    )
+  }
+
+  return (
+    <NavigationContainer theme={navTheme}>
+      <ServantTabNavigator />
     </NavigationContainer>
   )
 }
-
-// --- Root Navigator (role selector) ---
-
-export default function RootNavigator() {
-  const [selectedRole, setSelectedRole] = React.useState<'servant' | 'coordinator' | null>(null)
-
-  if (selectedRole === 'servant') {
-    return <ServantTabNavigator />
-  }
-
-  if (selectedRole === 'coordinator') {
-    return <CoordinatorTabNavigator />
-  }
-
-  return (
-    <View style={styles.loadingContainer}>
-      <Text style={styles.title}>Sunday School App</Text>
-      <Text style={styles.subtitle}>Development Mode</Text>
-      <Text style={styles.message}>Select a role to test:</Text>
-
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.roleButton}
-          onPress={() => setSelectedRole('servant')}
-        >
-          <Text style={styles.roleButtonText}>Servant View</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.roleButton}
-          onPress={() => setSelectedRole('coordinator')}
-        >
-          <Text style={styles.roleButtonText}>Coordinator View</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  )
-}
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 20,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 18,
-    color: '#007AFF',
-    marginBottom: 16,
-  },
-  message: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 32,
-  },
-  buttonContainer: {
-    width: '100%',
-    gap: 16,
-  },
-  roleButton: {
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-  },
-  roleButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  placeholderContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    padding: 20,
-  },
-  placeholderTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 8,
-  },
-  placeholderText: {
-    fontSize: 16,
-    color: '#666',
-  },
-})

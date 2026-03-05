@@ -1,6 +1,7 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, TouchableOpacity } from 'react-native'
 import type { AssignedKid } from '../hooks/useOutreach'
+import { useThemedStyles, ThemeColors } from '../theme'
 
 interface OutreachKidCardProps {
   assignedKid: AssignedKid
@@ -17,6 +18,8 @@ export function OutreachKidCard({
   onMap,
   onMessage,
 }: OutreachKidCardProps) {
+  const styles = useThemedStyles(createStyles)
+
   const { student, assignment, lastVisit } = assignedKid
   const initial = student.name.charAt(0).toUpperCase()
   const hasVisit = !!lastVisit
@@ -79,9 +82,9 @@ function formatShortDate(dateStr: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -91,70 +94,70 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
   },
   avatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: colors.primary,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
     marginRight: 12,
   },
   avatarText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '700' as const,
   },
   info: {
     flex: 1,
   },
   name: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
   },
   grade: {
     fontSize: 13,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   badge: {
-    alignSelf: 'flex-start',
+    alignSelf: 'flex-start' as const,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 10,
     marginTop: 6,
   },
   badgeGreen: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: colors.alertSuccessBg,
   },
   badgeGray: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.inputBackground,
   },
   badgeText: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '500' as const,
   },
   badgeTextGreen: {
-    color: '#4CAF50',
+    color: colors.success,
   },
   badgeTextGray: {
-    color: '#999',
+    color: colors.textMuted,
   },
   actions: {
-    flexDirection: 'row',
+    flexDirection: 'row' as const,
     marginTop: 8,
     gap: 16,
   },
   actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     gap: 4,
   },
   actionIcon: {
@@ -162,12 +165,12 @@ const styles = StyleSheet.create({
   },
   actionLabel: {
     fontSize: 13,
-    color: '#007AFF',
-    fontWeight: '500',
+    color: colors.onPrimaryText,
+    fontWeight: '500' as const,
   },
   chevron: {
     fontSize: 24,
-    color: '#ccc',
+    color: colors.chevron,
     lineHeight: 24,
     marginLeft: 8,
   },

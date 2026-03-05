@@ -1,6 +1,7 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, TouchableOpacity } from 'react-native'
 import { Grade } from '../hooks/useGrades'
+import { useThemedStyles, useTheme, ThemeColors } from '../theme'
 
 interface GradeCardProps {
   grade: Grade
@@ -8,6 +9,9 @@ interface GradeCardProps {
 }
 
 export function GradeCard({ grade, onPress }: GradeCardProps) {
+  const styles = useThemedStyles(createStyles)
+  const { colors } = useTheme()
+
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.content}>
@@ -26,7 +30,7 @@ export function GradeCard({ grade, onPress }: GradeCardProps) {
               <Text style={styles.statsLabel}>Recent Attendance:</Text>
               <Text style={[
                 styles.statsValue,
-                { color: grade.recent_attendance_rate >= 80 ? '#4CAF50' : '#FF9800' }
+                { color: grade.recent_attendance_rate >= 80 ? colors.success : colors.warning }
               ]}>
                 {grade.recent_attendance_rate}%
               </Text>
@@ -40,9 +44,9 @@ export function GradeCard({ grade, onPress }: GradeCardProps) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -52,57 +56,57 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
   },
   mainContent: {
     flex: 1,
     marginRight: 12,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     marginBottom: 8,
-    flexWrap: 'wrap',
+    flexWrap: 'wrap' as const,
     gap: 8,
   },
   gradeName: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginRight: 8,
   },
   badge: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: colors.alertInfoBg,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
   },
   badgeText: {
     fontSize: 12,
-    color: '#007AFF',
-    fontWeight: '500',
+    color: colors.onPrimaryText,
+    fontWeight: '500' as const,
   },
   statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
   },
   statsLabel: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginRight: 8,
   },
   statsValue: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   chevron: {
     fontSize: 24,
-    color: '#ccc',
+    color: colors.chevron,
     lineHeight: 24,
   },
 })

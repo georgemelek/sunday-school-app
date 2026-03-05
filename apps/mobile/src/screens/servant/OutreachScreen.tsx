@@ -2,13 +2,13 @@ import React from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   ActivityIndicator,
   RefreshControl,
   Linking,
   Alert,
 } from 'react-native'
+import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import type { AssignedKid } from '../../hooks/useOutreach'
 import { OutreachKidCard } from '../../components/OutreachKidCard'
 import { fillTemplate, DEFAULT_MESSAGE_TEMPLATE } from '../../utils/outreachTemplates'
@@ -28,6 +28,8 @@ export default function OutreachScreen({
   refetch,
   onKidPress,
 }: OutreachScreenProps) {
+  const styles = useThemedStyles(createStyles)
+  const { colors } = useTheme()
 
   const visitedCount = assignedKids.filter(k => k.visits.length > 0).length
   const totalCount = assignedKids.length
@@ -62,7 +64,7 @@ export default function OutreachScreen({
   if (loading && assignedKids.length === 0) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007AFF" />
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
   }
@@ -120,35 +122,35 @@ export default function OutreachScreen({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.background,
   },
   centered: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.background,
   },
   header: {
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   list: {
     padding: 16,
   },
   progressCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
@@ -158,43 +160,43 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   progressTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginBottom: 4,
   },
   progressCount: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginBottom: 10,
   },
   progressBarBg: {
     height: 8,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: colors.border,
     borderRadius: 4,
-    overflow: 'hidden',
+    overflow: 'hidden' as const,
   },
   progressBarFill: {
     height: 8,
-    backgroundColor: '#4CAF50',
+    backgroundColor: colors.success,
     borderRadius: 4,
   },
   empty: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     paddingTop: 60,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
   },
 })

@@ -2,13 +2,13 @@ import React, { useState } from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
 } from 'react-native'
+import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import type { Session } from '../../hooks/useSessions'
 import type { Servant } from '../../data/mockData'
 
@@ -33,6 +33,9 @@ export default function SessionFormScreen({
   onSave,
   onDelete,
 }: SessionFormScreenProps) {
+  const styles = useThemedStyles(createStyles)
+  const { colors } = useTheme()
+
   const isEdit = !!session
 
   const [date, setDate] = useState(session?.date || '')
@@ -141,7 +144,7 @@ export default function SessionFormScreen({
             value={date}
             onChangeText={setDate}
             placeholder="YYYY-MM-DD"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
           />
           {errors.date && <Text style={styles.errorText}>{errors.date}</Text>}
         </View>
@@ -154,7 +157,7 @@ export default function SessionFormScreen({
             value={lessonTopic}
             onChangeText={setLessonTopic}
             placeholder="Enter lesson topic"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
           />
           {errors.lessonTopic && <Text style={styles.errorText}>{errors.lessonTopic}</Text>}
         </View>
@@ -167,7 +170,7 @@ export default function SessionFormScreen({
             value={lessonPage}
             onChangeText={setLessonPage}
             placeholder="e.g., 45"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
             keyboardType="number-pad"
           />
         </View>
@@ -180,7 +183,7 @@ export default function SessionFormScreen({
             value={locationName}
             onChangeText={setLocationName}
             placeholder="Enter location"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
           />
         </View>
 
@@ -191,7 +194,7 @@ export default function SessionFormScreen({
             value={locationAddress}
             onChangeText={setLocationAddress}
             placeholder="Enter address"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
           />
         </View>
 
@@ -225,7 +228,7 @@ export default function SessionFormScreen({
             value={notes}
             onChangeText={setNotes}
             placeholder="Add notes..."
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
             multiline
             numberOfLines={3}
             textAlignVertical="top"
@@ -246,7 +249,7 @@ export default function SessionFormScreen({
           disabled={saving}
         >
           {saving ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color={colors.primaryText} />
           ) : (
             <Text style={styles.saveButtonText}>{isEdit ? 'Save Changes' : 'Create Session'}</Text>
           )}
@@ -256,28 +259,28 @@ export default function SessionFormScreen({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
+    flex: 1 as const,
+    backgroundColor: colors.background,
   },
   header: {
     padding: 20,
     paddingTop: 60,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   cancelButton: {
     fontSize: 16,
-    color: '#007AFF',
+    color: colors.primary,
     marginBottom: 8,
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   form: {
     padding: 16,
@@ -290,28 +293,28 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#333',
+    color: colors.textPrimary,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
   },
   inputError: {
-    borderColor: '#f44336',
+    borderColor: colors.error,
   },
   textArea: {
     minHeight: 80,
   },
   errorText: {
     fontSize: 12,
-    color: '#f44336',
+    color: colors.error,
     marginTop: 4,
   },
 
@@ -323,80 +326,80 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
   },
   servantChipSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   servantChipText: {
     fontSize: 14,
-    color: '#333',
+    color: colors.textPrimary,
   },
   servantChipTextSelected: {
-    color: '#fff',
+    color: colors.primaryText,
   },
 
   // Status
   statusRow: {
-    flexDirection: 'row',
+    flexDirection: 'row' as const,
     gap: 8,
   },
   statusChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
   },
   statusChipSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   statusChipText: {
     fontSize: 14,
-    color: '#333',
+    color: colors.textPrimary,
   },
   statusChipTextSelected: {
-    color: '#fff',
+    color: colors.primaryText,
   },
 
   // Footer
   footer: {
     padding: 16,
     paddingBottom: 34,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: colors.border,
     gap: 12,
   },
   saveButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     borderRadius: 10,
     padding: 16,
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
   saveButtonDisabled: {
     opacity: 0.6,
   },
   saveButtonText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   deleteButton: {
     borderRadius: 10,
     padding: 14,
-    alignItems: 'center',
+    alignItems: 'center' as const,
     borderWidth: 1,
-    borderColor: '#f44336',
+    borderColor: colors.error,
   },
   deleteButtonText: {
-    color: '#f44336',
+    color: colors.error,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
 })

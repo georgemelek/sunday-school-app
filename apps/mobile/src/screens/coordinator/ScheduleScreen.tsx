@@ -2,23 +2,25 @@ import React from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
 } from 'react-native'
+import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useClasses } from '../../hooks/useClasses'
 import { MOCK_CLASS_TYPES } from '../../data/mockData'
 import type { ClassInfo } from '../../data/mockData'
 
 const DAYS = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays']
 
-const CLASS_TYPE_COLORS: Record<string, string> = {
-  'Sunday School': '#007AFF',
-  'Small Group': '#5856D6',
-  'FNA': '#FF9500',
-  'Bible Study': '#34C759',
+function getClassTypeColors(colors: ThemeColors): Record<string, string> {
+  return {
+    'Sunday School': colors.classSundaySchool,
+    'Small Group': colors.classSmallGroup,
+    'FNA': colors.classFNA,
+    'Bible Study': colors.classBibleStudy,
+  }
 }
 
 interface ScheduleScreenProps {
@@ -26,6 +28,10 @@ interface ScheduleScreenProps {
 }
 
 export default function ScheduleScreen({ onClassPress }: ScheduleScreenProps) {
+  const styles = useThemedStyles(createStyles)
+  const { colors } = useTheme()
+  const CLASS_TYPE_COLORS = getClassTypeColors(colors)
+
   const { classes, loading, error, refetch } = useClasses()
 
   function formatTime(time: string): string {
@@ -37,7 +43,7 @@ export default function ScheduleScreen({ onClassPress }: ScheduleScreenProps) {
 
   function renderClassCard({ item }: { item: ClassInfo }) {
     const classType = MOCK_CLASS_TYPES.find(ct => ct.id === item.classTypeId)
-    const tagColor = CLASS_TYPE_COLORS[classType?.name || ''] || '#007AFF'
+    const tagColor = CLASS_TYPE_COLORS[classType?.name || ''] || colors.primary
     const dayLabel = DAYS[item.defaultDayOfWeek] || ''
     const timeLabel = `${formatTime(item.defaultStartTime)} \u2013 ${formatTime(item.defaultEndTime)}`
 
@@ -93,7 +99,7 @@ export default function ScheduleScreen({ onClassPress }: ScheduleScreenProps) {
           <Text style={styles.headerTitle}>Schedule</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     )
@@ -112,43 +118,43 @@ export default function ScheduleScreen({ onClassPress }: ScheduleScreenProps) {
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refetch} tintColor="#007AFF" />
+          <RefreshControl refreshing={loading} onRefresh={refetch} tintColor={colors.primary} />
         }
       />
     </View>
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
+    flex: 1 as const,
+    backgroundColor: colors.background,
   },
   header: {
     padding: 20,
     paddingTop: 60,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   listContent: {
     padding: 16,
   },
   loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    flex: 1 as const,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
 
   // Class cards
   classCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -158,20 +164,20 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
     marginBottom: 10,
     gap: 10,
   },
   className: {
     fontSize: 17,
-    fontWeight: '600',
-    color: '#333',
-    flex: 1,
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
+    flex: 1 as const,
   },
   tag: {
     paddingHorizontal: 10,
@@ -180,11 +186,11 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     marginBottom: 4,
   },
   detailIcon: {
@@ -194,33 +200,33 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#555',
-    flex: 1,
+    color: colors.textDetail,
+    flex: 1 as const,
   },
   chevron: {
-    position: 'absolute',
+    position: 'absolute' as const,
     right: 16,
-    top: '50%',
+    top: '50%' as const,
     fontSize: 24,
-    color: '#ccc',
-    fontWeight: '300',
+    color: colors.chevron,
+    fontWeight: '300' as const,
   },
 
   // Empty
   emptyState: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     paddingVertical: 40,
     paddingHorizontal: 20,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
   },
 })

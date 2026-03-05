@@ -2,13 +2,13 @@ import React, { useState, useMemo } from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   TouchableOpacity,
   TextInput,
   Alert,
   ActivityIndicator,
 } from 'react-native'
+import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useStudents, Student } from '../../hooks/useStudents'
 import { useAttendance, AttendanceEntry } from '../../hooks/useAttendance'
 
@@ -47,6 +47,8 @@ export default function TakeAttendanceScreen({
   gradeName,
   onBack,
 }: TakeAttendanceScreenProps) {
+  const styles = useThemedStyles(createStyles)
+  const { colors } = useTheme()
   const { students, loading: studentsLoading } = useStudents(gradeId)
   const { submitAttendance, hasAttendanceForDate } = useAttendance(gradeId)
   const [submitting, setSubmitting] = useState(false)
@@ -181,7 +183,7 @@ export default function TakeAttendanceScreen({
             value={entry.notes}
             onChangeText={text => updateNotes(item.id, text)}
             editable={!submitting}
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textMuted}
             autoFocus
           />
         )}
@@ -202,7 +204,7 @@ export default function TakeAttendanceScreen({
           </View>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     )
@@ -274,7 +276,7 @@ export default function TakeAttendanceScreen({
             disabled={submitting}
           >
             {submitting ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={colors.primaryText} />
             ) : (
               <Text style={styles.submitButtonText}>
                 Submit Attendance
@@ -287,131 +289,131 @@ export default function TakeAttendanceScreen({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   backButton: {
     marginBottom: 8,
   },
   backButtonText: {
     fontSize: 18,
-    color: '#007AFF',
-    fontWeight: '600',
+    color: colors.onPrimaryText,
+    fontWeight: '600' as const,
   },
   headerContent: {
     marginTop: 4,
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   dateBanner: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   dateLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
-    textTransform: 'uppercase',
+    fontWeight: '600' as const,
+    color: colors.textSecondary,
+    textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
     marginBottom: 4,
   },
   dateText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
   },
   alreadyRecorded: {
     fontSize: 13,
-    color: '#FF9800',
+    color: colors.warning,
     marginTop: 4,
-    fontStyle: 'italic',
+    fontStyle: 'italic' as const,
   },
   summaryBar: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
+    flexDirection: 'row' as const,
+    backgroundColor: colors.card,
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderBottomColor: colors.border,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   summaryItem: {
     flex: 1,
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
   summaryCount: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   summaryLabel: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   summaryDivider: {
     width: 1,
     height: 32,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: colors.border,
   },
   presentColor: {
-    color: '#4CAF50',
+    color: colors.success,
   },
   absentColor: {
-    color: '#f44336',
+    color: colors.error,
   },
   listContainer: {
     padding: 16,
   },
   studentCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
     marginBottom: 8,
-    overflow: 'hidden',
+    overflow: 'hidden' as const,
   },
   studentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     padding: 12,
   },
   avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: colors.primary,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
     marginRight: 12,
   },
   avatarAbsent: {
-    backgroundColor: '#ccc',
+    backgroundColor: colors.chevron,
   },
   avatarText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   studentInfo: {
     flex: 1,
@@ -419,12 +421,12 @@ const styles = StyleSheet.create({
   },
   studentName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
   },
   studentDetail: {
     fontSize: 13,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   statusToggle: {
@@ -432,53 +434,53 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     minWidth: 80,
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
   presentToggle: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: colors.alertSuccessBg,
   },
   absentToggle: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: colors.alertDangerBg,
   },
   statusText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   presentText: {
-    color: '#4CAF50',
+    color: colors.success,
   },
   absentText: {
-    color: '#f44336',
+    color: colors.error,
   },
   notesToggle: {
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderTopWidth: 1,
-    borderTopColor: '#f5f5f5',
+    borderTopColor: colors.borderLight,
   },
   notesToggleText: {
     fontSize: 13,
-    color: '#999',
-    fontStyle: 'italic',
+    color: colors.textMuted,
+    fontStyle: 'italic' as const,
   },
   notesInput: {
     marginHorizontal: 12,
     marginBottom: 12,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.background,
     borderRadius: 6,
     padding: 10,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    color: '#333',
+    borderColor: colors.border,
+    color: colors.textPrimary,
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     paddingHorizontal: 40,
     paddingTop: 60,
   },
@@ -488,34 +490,34 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
     lineHeight: 20,
   },
   footer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: colors.border,
   },
   submitButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: colors.success,
     borderRadius: 8,
     padding: 16,
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
   submitButtonDisabled: {
     opacity: 0.6,
   },
   submitButtonText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
 })

@@ -2,12 +2,12 @@ import React, { useState } from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   TouchableOpacity,
 } from 'react-native'
 import { useAttendance } from '../hooks/useAttendance'
 import { Student } from '../hooks/useStudents'
+import { useThemedStyles, ThemeColors } from '../theme'
 
 interface AttendanceHistoryViewProps {
   gradeId: string
@@ -29,6 +29,8 @@ export default function AttendanceHistoryView({
   gradeId,
   students,
 }: AttendanceHistoryViewProps) {
+  const styles = useThemedStyles(createStyles)
+
   const {
     records,
     loading,
@@ -184,25 +186,25 @@ export default function AttendanceHistoryView({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
     flex: 1,
   },
   toggleContainer: {
-    flexDirection: 'row',
+    flexDirection: 'row' as const,
     margin: 16,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: colors.borderLight,
     borderRadius: 8,
     padding: 3,
   },
   toggleButton: {
     flex: 1,
     paddingVertical: 8,
-    alignItems: 'center',
+    alignItems: 'center' as const,
     borderRadius: 6,
   },
   toggleActive: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -211,11 +213,11 @@ const styles = StyleSheet.create({
   },
   toggleText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
+    fontWeight: '600' as const,
+    color: colors.textSecondary,
   },
   toggleActiveText: {
-    color: '#007AFF',
+    color: colors.primary,
   },
   listContainer: {
     paddingHorizontal: 16,
@@ -223,16 +225,16 @@ const styles = StyleSheet.create({
   },
   // By Date view
   dateCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
     marginBottom: 8,
-    overflow: 'hidden',
+    overflow: 'hidden' as const,
   },
   dateHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     padding: 14,
   },
   dateInfo: {
@@ -240,32 +242,32 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
   },
   dateSummary: {
     fontSize: 13,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   dateRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     gap: 8,
   },
   expandIcon: {
     fontSize: 14,
-    color: '#999',
+    color: colors.textMuted,
   },
   dateDetails: {
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: colors.borderLight,
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
   recordRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     paddingVertical: 6,
   },
   statusDot: {
@@ -275,52 +277,52 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   presentDot: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: colors.success,
   },
   absentDot: {
-    backgroundColor: '#f44336',
+    backgroundColor: colors.error,
   },
   recordName: {
     flex: 1,
     fontSize: 14,
-    color: '#333',
+    color: colors.textPrimary,
   },
   recordStatus: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: '500' as const,
   },
   presentLabel: {
-    color: '#4CAF50',
+    color: colors.success,
   },
   absentLabel: {
-    color: '#f44336',
+    color: colors.error,
   },
   // By Student view
   studentCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
     marginBottom: 8,
     padding: 12,
   },
   studentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
   },
   avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: colors.primary,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
     marginRight: 12,
   },
   avatarText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   studentInfo: {
     flex: 1,
@@ -328,12 +330,12 @@ const styles = StyleSheet.create({
   },
   studentName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
   },
   studentStat: {
     fontSize: 13,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   // Rate badges
@@ -343,32 +345,32 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   ratePerfect: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: colors.alertSuccessBg,
   },
   rateGood: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: colors.alertOrangeBg,
   },
   rateLow: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: colors.alertDangerBg,
   },
   rateText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '700' as const,
   },
   ratePerfectText: {
-    color: '#4CAF50',
+    color: colors.success,
   },
   rateGoodText: {
-    color: '#FF9800',
+    color: colors.warning,
   },
   rateLowText: {
-    color: '#f44336',
+    color: colors.error,
   },
   // Empty state
   emptyState: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     paddingHorizontal: 40,
     paddingVertical: 60,
   },
@@ -378,14 +380,14 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
     lineHeight: 20,
   },
 })

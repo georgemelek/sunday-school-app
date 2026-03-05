@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
   ScrollView,
@@ -10,6 +9,7 @@ import {
   ActivityIndicator,
   Platform,
 } from 'react-native'
+import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { Student } from '../../hooks/useStudents'
 
 interface StudentFormScreenProps {
@@ -29,6 +29,8 @@ export default function StudentFormScreen({
   onSave,
   onBack,
 }: StudentFormScreenProps) {
+  const styles = useThemedStyles(createStyles)
+  const { colors } = useTheme()
   const [formData, setFormData] = useState({
     name: student?.name || '',
     date_of_birth: student?.date_of_birth || '',
@@ -263,7 +265,7 @@ export default function StudentFormScreen({
           disabled={saving}
         >
           {saving ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.primaryText} />
           ) : (
             <Text style={styles.saveButtonText}>
               {mode === 'add' ? 'Add Student' : 'Save Changes'}
@@ -275,38 +277,38 @@ export default function StudentFormScreen({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   backButton: {
     marginBottom: 8,
   },
   backButtonText: {
     fontSize: 18,
-    color: '#007AFF',
-    fontWeight: '600',
+    color: colors.onPrimaryText,
+    fontWeight: '600' as const,
   },
   headerContent: {
     marginTop: 4,
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   scrollView: {
@@ -320,57 +322,57 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   required: {
-    color: '#f44336',
+    color: colors.error,
   },
   input: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#333',
+    color: colors.textPrimary,
   },
   inputError: {
-    borderColor: '#f44336',
+    borderColor: colors.error,
   },
   textArea: {
     height: 100,
     paddingTop: 12,
   },
   errorText: {
-    color: '#f44336',
+    color: colors.error,
     fontSize: 12,
     marginTop: 4,
   },
   requiredNote: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   footer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: colors.border,
   },
   saveButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: 16,
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
   saveButtonDisabled: {
     opacity: 0.6,
   },
   saveButtonText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
 })

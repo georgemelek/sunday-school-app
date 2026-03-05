@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -13,17 +12,21 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { AuthStackParamList } from '../../types/navigation'
 import { supabase } from '../../lib/supabase'
+import { useThemedStyles } from '../../theme'
+import type { ThemeColors } from '../../theme'
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Login'>
 
 interface Props {
   navigation: LoginScreenNavigationProp
+  onTakeTour?: () => void
 }
 
-export default function LoginScreen({ navigation }: Props) {
+export default function LoginScreen({ navigation, onTakeTour }: Props) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const styles = useThemedStyles(createStyles)
 
   async function handleLogin() {
     if (!email || !password) {
@@ -91,6 +94,16 @@ export default function LoginScreen({ navigation }: Props) {
             )}
           </TouchableOpacity>
 
+          {onTakeTour && (
+            <TouchableOpacity
+              style={styles.tourButton}
+              onPress={onTakeTour}
+              disabled={loading}
+            >
+              <Text style={styles.tourButtonText}>Take a Tour</Text>
+            </TouchableOpacity>
+          )}
+
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don't have an account? </Text>
             <TouchableOpacity
@@ -106,69 +119,82 @@ export default function LoginScreen({ navigation }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
+    backgroundColor: colors.card,
+  } as const,
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'center' as const,
     padding: 20,
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
+    fontWeight: 'bold' as const,
+    color: colors.textPrimary,
+    textAlign: 'center' as const,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
     marginBottom: 40,
   },
   form: {
-    width: '100%',
+    width: '100%' as const,
   },
   input: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.inputBackground,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 16,
     fontSize: 16,
     marginBottom: 16,
-    color: '#333',
+    color: colors.textPrimary,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: 16,
-    alignItems: 'center',
+    alignItems: 'center' as const,
     marginTop: 8,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
+  },
+  tourButton: {
+    borderWidth: 2,
+    borderColor: colors.primary,
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center' as const,
+    marginTop: 12,
+  },
+  tourButtonText: {
+    color: colors.onPrimaryText,
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: 'row' as const,
+    justifyContent: 'center' as const,
     marginTop: 24,
   },
   footerText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
   },
   link: {
     fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '600',
+    color: colors.primary,
+    fontWeight: '600' as const,
   },
 })

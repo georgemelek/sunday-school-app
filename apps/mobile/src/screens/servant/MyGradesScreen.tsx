@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
@@ -11,6 +10,7 @@ import {
   Modal,
   RefreshControl,
 } from 'react-native'
+import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 // import { useAuth } from '../../contexts/AuthContext'
 import { useGrades } from '../../hooks/useGrades'
 import { GradeCard } from '../../components/GradeCard'
@@ -21,6 +21,8 @@ interface MyGradesScreenProps {
 }
 
 export default function MyGradesScreen({ onGradePress, onBack }: MyGradesScreenProps) {
+  const styles = useThemedStyles(createStyles)
+  const { colors } = useTheme()
   // const { profile, signOut } = useAuth()
   const { grades, loading, error, refetch, createGrade } = useGrades()
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -101,7 +103,7 @@ export default function MyGradesScreen({ onGradePress, onBack }: MyGradesScreenP
       {/* Content */}
       {loading && grades.length === 0 ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       ) : error ? (
         renderError()
@@ -118,7 +120,7 @@ export default function MyGradesScreen({ onGradePress, onBack }: MyGradesScreenP
           contentContainerStyle={grades.length === 0 ? styles.emptyListContainer : styles.listContainer}
           ListEmptyComponent={renderEmptyState}
           refreshControl={
-            <RefreshControl refreshing={loading} onRefresh={refetch} tintColor="#007AFF" />
+            <RefreshControl refreshing={loading} onRefresh={refetch} tintColor={colors.primary} />
           }
         />
       )}
@@ -161,7 +163,7 @@ export default function MyGradesScreen({ onGradePress, onBack }: MyGradesScreenP
                 disabled={creating}
               >
                 {creating ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={colors.primaryText} />
                 ) : (
                   <Text style={styles.confirmButtonText}>Create</Text>
                 )}
@@ -174,64 +176,64 @@ export default function MyGradesScreen({ onGradePress, onBack }: MyGradesScreenP
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.background,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
     padding: 20,
     paddingTop: 60,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   backButton: {
     marginBottom: 4,
   },
   backButtonText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: colors.onPrimaryText,
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   createButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   createButtonText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   listContainer: {
     padding: 16,
   },
   emptyListContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     paddingHorizontal: 40,
   },
   emptyIcon: {
@@ -240,20 +242,20 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
     lineHeight: 20,
   },
   errorState: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
     paddingHorizontal: 40,
   },
   errorIcon: {
@@ -262,80 +264,81 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   errorText: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
     marginBottom: 24,
   },
   retryButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
     padding: 20,
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 24,
-    width: '100%',
+    width: '100%' as const,
     maxWidth: 400,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
     marginBottom: 20,
   },
   input: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.inputBackground,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 16,
     fontSize: 16,
     marginBottom: 20,
+    color: colors.textPrimary,
   },
   modalButtons: {
-    flexDirection: 'row',
+    flexDirection: 'row' as const,
     gap: 12,
   },
   modalButton: {
     flex: 1,
     padding: 16,
     borderRadius: 8,
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
   cancelButton: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.inputBackground,
   },
   cancelButtonText: {
-    color: '#666',
+    color: colors.textSecondary,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   confirmButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
   },
   confirmButtonText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
 })

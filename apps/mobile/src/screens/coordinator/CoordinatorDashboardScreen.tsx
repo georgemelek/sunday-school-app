@@ -2,19 +2,21 @@ import React from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
 } from 'react-native'
+import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useCoordinatorStats, ClassSummary } from '../../hooks/useCoordinatorStats'
 
-const CLASS_TYPE_COLORS: Record<string, string> = {
-  'Sunday School': '#007AFF',
-  'Small Group': '#5856D6',
-  'FNA': '#FF9500',
-  'Bible Study': '#34C759',
+function getClassTypeColors(colors: ThemeColors): Record<string, string> {
+  return {
+    'Sunday School': colors.classSundaySchool,
+    'Small Group': colors.classSmallGroup,
+    'FNA': colors.classFNA,
+    'Bible Study': colors.classBibleStudy,
+  }
 }
 
 interface CoordinatorDashboardScreenProps {
@@ -28,6 +30,10 @@ export default function CoordinatorDashboardScreen({
   onViewReport,
   onViewStaffing,
 }: CoordinatorDashboardScreenProps) {
+  const styles = useThemedStyles(createStyles)
+  const { colors } = useTheme()
+  const CLASS_TYPE_COLORS = getClassTypeColors(colors)
+
   const {
     totalStudents,
     totalClasses,
@@ -42,7 +48,7 @@ export default function CoordinatorDashboardScreen({
   const greeting = getGreeting()
 
   function renderHeader() {
-    const attendanceColor = overallAttendanceRate >= 80 ? '#4CAF50' : overallAttendanceRate >= 60 ? '#FF9500' : '#f44336'
+    const attendanceColor = overallAttendanceRate >= 80 ? colors.success : overallAttendanceRate >= 60 ? colors.warning : colors.error
 
     return (
       <View>
@@ -67,7 +73,7 @@ export default function CoordinatorDashboardScreen({
             <Text style={styles.statLabel}>Attendance Rate</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.statCard} onPress={onViewStaffing}>
-            <Text style={[styles.statNumber, upcomingGaps.length > 0 && { color: '#f44336' }]}>
+            <Text style={[styles.statNumber, upcomingGaps.length > 0 && { color: colors.error }]}>
               {upcomingGaps.length}
             </Text>
             <Text style={styles.statLabel}>Staffing Gaps</Text>
@@ -95,7 +101,7 @@ export default function CoordinatorDashboardScreen({
   }
 
   function renderClassCard({ item }: { item: ClassSummary }) {
-    const tagColor = CLASS_TYPE_COLORS[item.classTypeName] || '#007AFF'
+    const tagColor = CLASS_TYPE_COLORS[item.classTypeName] || colors.primary
 
     return (
       <TouchableOpacity
@@ -148,7 +154,7 @@ export default function CoordinatorDashboardScreen({
           <Text style={styles.headerTitle}>Dashboard</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     )
@@ -168,7 +174,7 @@ export default function CoordinatorDashboardScreen({
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refetch} tintColor="#007AFF" />
+          <RefreshControl refreshing={loading} onRefresh={refetch} tintColor={colors.primary} />
         }
       />
     </View>
@@ -195,32 +201,32 @@ function formatShortDate(dateStr: string): string {
   return `${months[d.getMonth()]} ${d.getDate()}`
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
+    flex: 1 as const,
+    backgroundColor: colors.background,
   },
   header: {
     padding: 20,
     paddingTop: 60,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   listContent: {
     padding: 16,
     paddingTop: 0,
   },
   loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    flex: 1 as const,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
 
   // Greeting
@@ -230,25 +236,25 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 22,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
   },
   dateText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 4,
   },
 
   // Stats
   statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
     gap: 12,
     marginBottom: 16,
   },
   statCard: {
-    width: '47%',
-    backgroundColor: '#fff',
+    width: '47%' as const,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     shadowColor: '#000',
@@ -257,16 +263,16 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   statNumber: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   statLabel: {
     fontSize: 13,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 4,
   },
 
@@ -276,36 +282,36 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   alertCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF8E1',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.alertWarningBg,
     borderRadius: 10,
     padding: 12,
     gap: 10,
     borderWidth: 1,
-    borderColor: '#FFE082',
+    borderColor: colors.alertWarningBorder,
   },
   alertIcon: {
     fontSize: 16,
   },
   alertText: {
     fontSize: 13,
-    color: '#333',
-    flex: 1,
+    color: colors.textPrimary,
+    flex: 1 as const,
     lineHeight: 18,
   },
 
   // Section
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
     marginBottom: 12,
   },
 
   // Class cards
   classCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -315,20 +321,20 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   classCardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
     marginBottom: 8,
     gap: 10,
   },
   className: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    flex: 1,
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
+    flex: 1 as const,
   },
   tag: {
     paddingHorizontal: 10,
@@ -337,44 +343,44 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   classCardDetails: {
     gap: 4,
   },
   classDetailText: {
     fontSize: 14,
-    color: '#555',
+    color: colors.textDetail,
   },
   classDetailMuted: {
     fontSize: 14,
-    color: '#999',
-    fontStyle: 'italic',
+    color: colors.textMuted,
+    fontStyle: 'italic' as const,
   },
   chevron: {
-    position: 'absolute',
+    position: 'absolute' as const,
     right: 16,
-    top: '50%',
+    top: '50%' as const,
     fontSize: 24,
-    color: '#ccc',
-    fontWeight: '300',
+    color: colors.chevron,
+    fontWeight: '300' as const,
   },
 
   // Empty
   emptyState: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     paddingVertical: 40,
     paddingHorizontal: 20,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
   },
 })

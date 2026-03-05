@@ -1,6 +1,7 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { View, Text, TouchableOpacity } from 'react-native'
 import { Student } from '../hooks/useStudents'
+import { useThemedStyles, ThemeColors } from '../theme'
 
 interface StudentListItemProps {
   student: Student
@@ -8,6 +9,8 @@ interface StudentListItemProps {
 }
 
 export function StudentListItem({ student, onPress }: StudentListItemProps) {
+  const styles = useThemedStyles(createStyles)
+
   const getAge = (dateOfBirth?: string) => {
     if (!dateOfBirth) return null
     const today = new Date()
@@ -53,30 +56,30 @@ export function StudentListItem({ student, onPress }: StudentListItemProps) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.card,
     padding: 12,
     marginBottom: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   avatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: colors.primary,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
     marginRight: 12,
   },
   avatarText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   content: {
     flex: 1,
@@ -84,32 +87,32 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginBottom: 4,
   },
   detailsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    flexWrap: 'wrap' as const,
   },
   detail: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
   },
   separator: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginHorizontal: 6,
   },
   notes: {
     fontSize: 12,
-    color: '#FF9800',
+    color: colors.warning,
     marginTop: 4,
-    fontStyle: 'italic',
+    fontStyle: 'italic' as const,
   },
   chevron: {
     fontSize: 20,
-    color: '#ccc',
+    color: colors.chevron,
   },
 })

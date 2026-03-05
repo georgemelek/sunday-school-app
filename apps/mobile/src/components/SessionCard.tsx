@@ -1,7 +1,8 @@
 import React from 'react'
-import { View, Text, StyleSheet, TouchableOpacity, Linking, Platform } from 'react-native'
+import { View, Text, TouchableOpacity, Linking, Platform } from 'react-native'
 import { Session } from '../hooks/useSessions'
 import { ClassInfo, ClassType, Servant } from '../data/mockData'
+import { useThemedStyles, useTheme, ThemeColors } from '../theme'
 
 interface SessionCardProps {
   session: Session
@@ -13,6 +14,13 @@ interface SessionCardProps {
   onPress?: () => void
 }
 
+const getClassTypeColors = (colors: ThemeColors): Record<string, string> => ({
+  'Sunday School': colors.classSundaySchool,
+  'Small Group': colors.classSmallGroup,
+  'FNA': colors.classFNA,
+  'Bible Study': colors.classBibleStudy,
+})
+
 export function SessionCard({
   session,
   classInfo,
@@ -22,6 +30,9 @@ export function SessionCard({
   totalServants = 0,
   onPress,
 }: SessionCardProps) {
+  const styles = useThemedStyles(createStyles)
+  const { colors } = useTheme()
+
   const isToday = session.date === '2026-02-23'
   const isCanceled = session.status === 'canceled'
 
@@ -30,7 +41,8 @@ export function SessionCard({
   const availableCount = totalServants - unavailableServants.length
 
   const classTypeName = classType?.name || ''
-  const tagColor = CLASS_TYPE_COLORS[classTypeName] || '#007AFF'
+  const classTypeColors = getClassTypeColors(colors)
+  const tagColor = classTypeColors[classTypeName] || colors.primary
 
   function handleLocationPress() {
     if (!session.locationAddress) return
@@ -74,7 +86,7 @@ export function SessionCard({
         <>
           {/* Time + Location */}
           <View style={styles.detailRow}>
-            <Text style={styles.detailIcon}>{'clock' === 'clock' ? '\u{1F552}' : ''}</Text>
+            <Text style={styles.detailIcon}>{'\u{1F552}'}</Text>
             <Text style={styles.detailText}>{timeLabel}</Text>
           </View>
 
@@ -140,13 +152,6 @@ export function SessionCard({
   )
 }
 
-const CLASS_TYPE_COLORS: Record<string, string> = {
-  'Sunday School': '#007AFF',
-  'Small Group': '#5856D6',
-  'FNA': '#FF9500',
-  'Bible Study': '#34C759',
-}
-
 function formatTimeRange(start: string, end: string): string {
   return `${formatTime(start)} – ${formatTime(end)}`
 }
@@ -158,9 +163,9 @@ function formatTime(time: string): string {
   return m === 0 ? `${hour} ${period}` : `${hour}:${m.toString().padStart(2, '0')} ${period}`
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -170,19 +175,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   cardToday: {
-    borderColor: '#007AFF',
+    borderColor: colors.primary,
     borderWidth: 2,
   },
   cardCanceled: {
     opacity: 0.6,
   },
   topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'flex-start' as const,
     marginBottom: 10,
     gap: 10,
   },
@@ -193,38 +198,38 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   topicWrapper: {
     flex: 1,
   },
   topic: {
     fontSize: 17,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     lineHeight: 22,
   },
   topicCanceled: {
-    textDecorationLine: 'line-through',
-    color: '#999',
+    textDecorationLine: 'line-through' as const,
+    color: colors.textMuted,
   },
   canceledBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     marginTop: 4,
   },
   canceledText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#f44336',
+    fontWeight: '600' as const,
+    color: colors.error,
   },
   canceledNotes: {
     fontSize: 13,
-    color: '#999',
+    color: colors.textMuted,
   },
   detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     marginBottom: 4,
   },
   detailIcon: {
@@ -234,19 +239,19 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#555',
+    color: colors.textDetail,
     flex: 1,
   },
   locationLink: {
-    color: '#007AFF',
+    color: colors.primary,
   },
   pageText: {
     fontSize: 13,
-    color: '#999',
+    color: colors.textMuted,
   },
   staffingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     marginTop: 8,
     gap: 8,
   },
@@ -256,41 +261,41 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   staffingWarning: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: colors.alertOrangeBg,
   },
   staffingWarningText: {
-    color: '#E65100',
+    color: colors.alertOrangeText,
   },
   staffingDanger: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: colors.alertDangerBg,
   },
   staffingDangerText: {
-    color: '#C62828',
+    color: colors.alertDangerText,
   },
   staffingBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   unavailableNames: {
     fontSize: 12,
-    color: '#999',
+    color: colors.textMuted,
     flex: 1,
   },
   staffingOk: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
-    backgroundColor: '#E8F5E9',
+    backgroundColor: colors.alertSuccessBg,
   },
   staffingOkText: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#2E7D32',
+    fontWeight: '500' as const,
+    color: colors.alertSuccessText,
   },
   notes: {
     fontSize: 13,
-    color: '#999',
-    fontStyle: 'italic',
+    color: colors.textMuted,
+    fontStyle: 'italic' as const,
     marginTop: 6,
   },
 })

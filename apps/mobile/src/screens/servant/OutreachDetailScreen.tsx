@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TouchableOpacity,
   Linking,
@@ -11,6 +10,7 @@ import {
   TextInput,
   Platform,
 } from 'react-native'
+import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import type { AssignedKid } from '../../hooks/useOutreach'
 import { fillTemplate, DEFAULT_MESSAGE_TEMPLATE } from '../../utils/outreachTemplates'
 
@@ -27,6 +27,8 @@ export default function OutreachDetailScreen({
   onBack,
   onLogVisit,
 }: OutreachDetailScreenProps) {
+  const styles = useThemedStyles(createStyles)
+  const { colors } = useTheme()
   const { student, assignment, visits } = assignedKid
 
   const [modalVisible, setModalVisible] = useState(false)
@@ -149,7 +151,7 @@ export default function OutreachDetailScreen({
               value={visitDate}
               onChangeText={setVisitDate}
               placeholder="2026-02-23"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textMuted}
             />
 
             <Text style={styles.inputLabel}>Notes (optional)</Text>
@@ -158,7 +160,7 @@ export default function OutreachDetailScreen({
               value={visitNotes}
               onChangeText={setVisitNotes}
               placeholder="Where did you go? How was it?"
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textMuted}
               multiline
               numberOfLines={3}
             />
@@ -200,87 +202,87 @@ function formatDate(dateStr: string): string {
   })
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.background,
   },
   header: {
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   backButton: {
     marginBottom: 8,
   },
   backText: {
     fontSize: 16,
-    color: '#007AFF',
+    color: colors.onPrimaryText,
   },
   headerTitle: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   content: {
     padding: 16,
     paddingBottom: 100,
   },
   infoCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 20,
-    alignItems: 'center',
+    alignItems: 'center' as const,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   avatar: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: colors.primary,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
     marginBottom: 12,
   },
   avatarText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: '700' as const,
   },
   infoName: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   infoGrade: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   infoParent: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 8,
   },
   contactRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-around' as const,
     marginBottom: 24,
   },
   contactButton: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    alignItems: 'center' as const,
     flex: 1,
     marginHorizontal: 4,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   contactIcon: {
     fontSize: 24,
@@ -288,70 +290,70 @@ const styles = StyleSheet.create({
   },
   contactLabel: {
     fontSize: 13,
-    color: '#007AFF',
-    fontWeight: '600',
+    color: colors.onPrimaryText,
+    fontWeight: '600' as const,
   },
   section: {
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginBottom: 12,
   },
   noVisits: {
     fontSize: 14,
-    color: '#999',
-    fontStyle: 'italic',
+    color: colors.textMuted,
+    fontStyle: 'italic' as const,
   },
   visitItem: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   visitDate: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
   },
   visitNotes: {
     fontSize: 13,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   footer: {
-    position: 'absolute',
+    position: 'absolute' as const,
     bottom: 0,
     left: 0,
     right: 0,
     padding: 16,
     paddingBottom: Platform.OS === 'ios' ? 34 : 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: colors.border,
   },
   logButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     borderRadius: 10,
     padding: 16,
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
   logButtonText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-end' as const,
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 24,
@@ -359,31 +361,31 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
     marginBottom: 20,
   },
   inputLabel: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#666',
+    fontWeight: '500' as const,
+    color: colors.textSecondary,
     marginBottom: 6,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    color: '#333',
+    color: colors.textPrimary,
     marginBottom: 16,
   },
   inputMultiline: {
     height: 80,
-    textAlignVertical: 'top',
+    textAlignVertical: 'top' as const,
   },
   modalActions: {
-    flexDirection: 'row',
+    flexDirection: 'row' as const,
     gap: 12,
   },
   cancelButton: {
@@ -391,24 +393,24 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    alignItems: 'center',
+    borderColor: colors.border,
+    alignItems: 'center' as const,
   },
   cancelButtonText: {
     fontSize: 16,
-    color: '#666',
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontWeight: '600' as const,
   },
   saveButton: {
     flex: 1,
     padding: 14,
     borderRadius: 10,
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
+    backgroundColor: colors.primary,
+    alignItems: 'center' as const,
   },
   saveButtonText: {
     fontSize: 16,
-    color: '#fff',
-    fontWeight: '600',
+    color: colors.primaryText,
+    fontWeight: '600' as const,
   },
 })

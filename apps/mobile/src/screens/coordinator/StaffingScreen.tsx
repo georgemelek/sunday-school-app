@@ -2,23 +2,25 @@ import React, { useMemo, useState, useCallback } from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
   Alert,
 } from 'react-native'
+import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useClasses } from '../../hooks/useClasses'
 import { useSessions } from '../../hooks/useSessions'
 import { useAvailability } from '../../hooks/useAvailability'
 import { MOCK_CLASS_TYPES } from '../../data/mockData'
 
-const CLASS_TYPE_COLORS: Record<string, string> = {
-  'Sunday School': '#007AFF',
-  'Small Group': '#5856D6',
-  'FNA': '#FF9500',
-  'Bible Study': '#34C759',
+function getClassTypeColors(colors: ThemeColors): Record<string, string> {
+  return {
+    'Sunday School': colors.classSundaySchool,
+    'Small Group': colors.classSmallGroup,
+    'FNA': colors.classFNA,
+    'Bible Study': colors.classBibleStudy,
+  }
 }
 
 const TODAY = '2026-02-23'
@@ -39,6 +41,10 @@ interface ClassEntry {
 }
 
 export default function StaffingScreen() {
+  const styles = useThemedStyles(createStyles)
+  const { colors } = useTheme()
+  const CLASS_TYPE_COLORS = getClassTypeColors(colors)
+
   const { classes, loading: classesLoading, refetch: refetchClasses, getServantsByClassId } = useClasses()
   const { sessions, loading: sessionsLoading, refetch: refetchSessions } = useSessions()
   const { loading: availLoading, refetch: refetchAvail, getUnavailableServantsForDate, toggleAvailability } = useAvailability()
@@ -126,16 +132,16 @@ export default function StaffingScreen() {
 
   function coverageColor(availableCount: number, totalCount: number): string {
     const ratio = totalCount > 0 ? availableCount / totalCount : 0
-    if (ratio >= 0.7) return '#4CAF50'
-    if (ratio >= 0.5) return '#FF9500'
-    return '#f44336'
+    if (ratio >= 0.7) return colors.success
+    if (ratio >= 0.5) return colors.warning
+    return colors.error
   }
 
   function coverageBgColor(availableCount: number, totalCount: number): string {
     const ratio = totalCount > 0 ? availableCount / totalCount : 0
-    if (ratio >= 0.7) return '#E8F5E9'
-    if (ratio >= 0.5) return '#FFF3E0'
-    return '#FFEBEE'
+    if (ratio >= 0.7) return colors.alertSuccessBg
+    if (ratio >= 0.5) return colors.alertOrangeBg
+    return colors.alertDangerBg
   }
 
   function renderDateRow({ item }: { item: DateRow }) {
@@ -154,7 +160,7 @@ export default function StaffingScreen() {
         {/* Class coverage bars */}
         <View style={styles.classEntries}>
           {item.classEntries.map(entry => {
-            const tagColor = CLASS_TYPE_COLORS[entry.classTypeName] || '#007AFF'
+            const tagColor = CLASS_TYPE_COLORS[entry.classTypeName] || colors.primary
             const color = coverageColor(entry.availableCount, entry.totalServants)
             const bgColor = coverageBgColor(entry.availableCount, entry.totalServants)
 
@@ -221,7 +227,7 @@ export default function StaffingScreen() {
           <Text style={styles.headerTitle}>Staffing</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     )
@@ -240,7 +246,7 @@ export default function StaffingScreen() {
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refetch} tintColor="#007AFF" />
+          <RefreshControl refreshing={loading} onRefresh={refetch} tintColor={colors.primary} />
         }
       />
     </View>
@@ -254,36 +260,36 @@ function formatDateLabel(dateStr: string): string {
   return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
+    flex: 1 as const,
+    backgroundColor: colors.background,
   },
   header: {
     padding: 20,
     paddingTop: 60,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   listContent: {
     padding: 16,
   },
   loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    flex: 1 as const,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
 
   // Date card
   dateCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     marginBottom: 12,
     shadowColor: '#000',
@@ -292,24 +298,24 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
-    overflow: 'hidden',
+    borderColor: colors.borderLight,
+    overflow: 'hidden' as const,
   },
   dateHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
     padding: 14,
     paddingBottom: 10,
   },
   dateLabel: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   expandIcon: {
     fontSize: 12,
-    color: '#999',
+    color: colors.textMuted,
   },
 
   // Class entries
@@ -319,20 +325,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   classRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
   },
   classInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    flex: 1 as const,
     gap: 8,
   },
   classNameSmall: {
     fontSize: 14,
-    color: '#555',
-    flex: 1,
+    color: colors.textDetail,
+    flex: 1 as const,
   },
   miniTag: {
     paddingHorizontal: 8,
@@ -341,7 +347,7 @@ const styles = StyleSheet.create({
   },
   miniTagText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   coverageBadge: {
     paddingHorizontal: 10,
@@ -351,7 +357,7 @@ const styles = StyleSheet.create({
   },
   coverageText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '700' as const,
   },
 
   // Servant list
@@ -359,12 +365,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: colors.borderLight,
     gap: 4,
   },
   servantRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     paddingVertical: 4,
     paddingLeft: 4,
     gap: 8,
@@ -374,28 +380,28 @@ const styles = StyleSheet.create({
   },
   servantName: {
     fontSize: 14,
-    color: '#333',
+    color: colors.textPrimary,
   },
   servantNameUnavailable: {
-    color: '#999',
-    textDecorationLine: 'line-through',
+    color: colors.textMuted,
+    textDecorationLine: 'line-through' as const,
   },
 
   // Empty
   emptyState: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     paddingVertical: 40,
     paddingHorizontal: 20,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
   },
 })

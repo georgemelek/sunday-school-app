@@ -8,16 +8,19 @@ import {
   Linking,
   Platform,
 } from 'react-native'
+import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { Session } from '../../hooks/useSessions'
 import { useClasses } from '../../hooks/useClasses'
 import { useAvailability } from '../../hooks/useAvailability'
 import { CURRENT_USER, MOCK_CLASS_TYPES } from '../../data/mockData'
 
-const CLASS_TYPE_COLORS: Record<string, string> = {
-  'Sunday School': '#007AFF',
-  'Small Group': '#5856D6',
-  'FNA': '#FF9500',
-  'Bible Study': '#34C759',
+function getClassTypeColors(colors: ThemeColors): Record<string, string> {
+  return {
+    'Sunday School': colors.classSundaySchool,
+    'Small Group': colors.classSmallGroup,
+    'FNA': colors.classFNA,
+    'Bible Study': colors.classBibleStudy,
+  }
 }
 
 interface SessionDetailScreenProps {
@@ -31,15 +34,19 @@ export default function SessionDetailScreen({
   onBack,
   onTakeAttendance,
 }: SessionDetailScreenProps) {
+  const styles = useThemedStyles(createStyles)
+  const { colors } = useTheme()
   const { getClassById, getServantById, getServantsByClassId } = useClasses()
   const { isServantAvailable } = useAvailability()
+
+  const classTypeColors = getClassTypeColors(colors)
 
   const cls = getClassById(session.classId)
   const classType = cls
     ? MOCK_CLASS_TYPES.find(ct => ct.id === cls.classTypeId)
     : undefined
   const classTypeName = classType?.name || ''
-  const tagColor = CLASS_TYPE_COLORS[classTypeName] || '#007AFF'
+  const tagColor = classTypeColors[classTypeName] || colors.primary
 
   const lessonServant = session.lessonServantId
     ? getServantById(session.lessonServantId)
@@ -281,43 +288,43 @@ function formatTime(time: string): string {
 
 // --- Styles ---
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   backButton: {
     marginBottom: 8,
   },
   backButtonText: {
     fontSize: 18,
-    color: '#007AFF',
-    fontWeight: '600',
+    color: colors.onPrimaryText,
+    fontWeight: '600' as const,
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
     marginTop: 4,
     lineHeight: 30,
   },
   subtitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     marginTop: 8,
     gap: 10,
   },
   subtitle: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
   },
   tag: {
     paddingHorizontal: 10,
@@ -326,7 +333,7 @@ const styles = StyleSheet.create({
   },
   tagText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   scrollContent: {
     flex: 1,
@@ -337,62 +344,62 @@ const styles = StyleSheet.create({
 
   // Status banners
   canceledBanner: {
-    backgroundColor: '#FFEBEE',
+    backgroundColor: colors.alertDangerBg,
     borderRadius: 10,
     padding: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#FFCDD2',
+    borderColor: colors.error,
   },
   canceledBannerText: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#C62828',
+    fontWeight: '700' as const,
+    color: colors.alertDangerText,
   },
   canceledReason: {
     fontSize: 13,
-    color: '#D32F2F',
+    color: colors.error,
     marginTop: 4,
   },
   completedBanner: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.inputBackground,
     borderRadius: 10,
     padding: 14,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
   },
   completedBannerText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#757575',
+    fontWeight: '600' as const,
+    color: colors.textMuted,
   },
 
   // Teaching banner
   teachingBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF8E1',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.alertWarningBg,
     borderRadius: 10,
     padding: 14,
     marginBottom: 16,
     gap: 10,
     borderWidth: 1,
-    borderColor: '#FFE082',
+    borderColor: colors.alertWarningBorder,
   },
   teachingIcon: {
     fontSize: 20,
   },
   teachingText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#F57F17',
+    fontWeight: '600' as const,
+    color: colors.warning,
     flex: 1,
   },
 
   // Sections
   section: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -402,13 +409,13 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   sectionLabel: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#999',
-    textTransform: 'uppercase',
+    fontWeight: '600' as const,
+    color: colors.textMuted,
+    textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
     marginBottom: 10,
   },
@@ -417,61 +424,61 @@ const styles = StyleSheet.create({
   // Date & Time
   dateText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
   },
   timeText: {
     fontSize: 15,
-    color: '#555',
+    color: colors.textDetail,
     marginTop: 4,
   },
 
   // Location
   locationName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
   },
   locationLink: {
-    color: '#007AFF',
+    color: colors.onPrimaryText,
   },
   locationAddress: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   mapHint: {
     fontSize: 12,
-    color: '#007AFF',
+    color: colors.onPrimaryText,
     marginTop: 6,
   },
 
   // Lesson info
   infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
     paddingVertical: 6,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.borderLight,
   },
   infoLabel: {
     fontSize: 14,
-    color: '#999',
+    color: colors.textMuted,
   },
   infoValue: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
   },
 
   // Servant roster
   servantRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     paddingVertical: 10,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.borderLight,
   },
   availabilityDot: {
     width: 10,
@@ -480,18 +487,18 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   dotAvailable: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: colors.success,
   },
   dotUnavailable: {
-    backgroundColor: '#f44336',
+    backgroundColor: colors.error,
   },
   servantName: {
     fontSize: 15,
-    color: '#333',
+    color: colors.textPrimary,
     flex: 1,
   },
   servantNameUnavailable: {
-    color: '#999',
+    color: colors.textMuted,
   },
   roleBadge: {
     paddingHorizontal: 8,
@@ -500,45 +507,45 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   teachingBadge: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: colors.alertInfoBg,
   },
   teachingBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
-    color: '#1565C0',
+    fontWeight: '600' as const,
+    color: colors.onPrimaryText,
   },
   adminBadge: {
     backgroundColor: '#F3E5F5',
   },
   adminBadgeText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '600' as const,
     color: '#7B1FA2',
   },
   unavailableLabel: {
     fontSize: 11,
-    color: '#f44336',
+    color: colors.error,
     marginLeft: 8,
   },
 
   // Notes
   notesText: {
     fontSize: 14,
-    color: '#555',
+    color: colors.textDetail,
     lineHeight: 20,
   },
 
   // Take Attendance button
   attendanceButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     borderRadius: 10,
     padding: 16,
-    alignItems: 'center',
+    alignItems: 'center' as const,
     marginTop: 4,
   },
   attendanceButtonText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
 })

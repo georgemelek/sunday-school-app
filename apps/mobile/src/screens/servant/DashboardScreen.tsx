@@ -2,12 +2,12 @@ import React from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   SectionList,
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
 } from 'react-native'
+import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useClasses } from '../../hooks/useClasses'
 import { useSessions, Session } from '../../hooks/useSessions'
 import { useAvailability } from '../../hooks/useAvailability'
@@ -25,6 +25,8 @@ export default function DashboardScreen({
   onNavigateToAvailability,
   onSessionPress,
 }: DashboardScreenProps) {
+  const styles = useThemedStyles(createStyles)
+  const { colors } = useTheme()
   const { classes, classTypes, servants, loading: classesLoading, refetch: refetchClasses, getClassById, getServantById } = useClasses()
   const { sessions, loading: sessionsLoading, refetch: refetchSessions, getUpcomingSessions } = useSessions()
   const { loading: availLoading, refetch: refetchAvail, getUnavailableServantsForDate, isServantAvailable } = useAvailability()
@@ -163,7 +165,7 @@ export default function DashboardScreen({
           <Text style={styles.headerTitle}>Dashboard</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     )
@@ -186,7 +188,7 @@ export default function DashboardScreen({
         contentContainerStyle={styles.listContent}
         stickySectionHeadersEnabled={false}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={handleRefresh} tintColor="#007AFF" />
+          <RefreshControl refreshing={loading} onRefresh={handleRefresh} tintColor={colors.primary} />
         }
       />
     </View>
@@ -247,23 +249,23 @@ function formatSectionDate(dateStr: string): string {
 
 // --- Styles ---
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: colors.background,
   },
   header: {
     padding: 20,
     paddingTop: 60,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   listContent: {
     padding: 16,
@@ -271,8 +273,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
 
   // Greeting
@@ -282,26 +284,26 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 22,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
   },
   dateText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 4,
   },
 
   // Quick Actions
   quickActions: {
-    flexDirection: 'row',
+    flexDirection: 'row' as const,
     gap: 12,
     marginBottom: 16,
   },
   quickAction: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 14,
     gap: 10,
@@ -311,15 +313,15 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   quickActionIcon: {
     fontSize: 20,
   },
   quickActionLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
   },
 
   // Alerts
@@ -328,25 +330,25 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   alertCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF8E1',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.alertWarningBg,
     borderRadius: 10,
     padding: 12,
     gap: 10,
     borderWidth: 1,
-    borderColor: '#FFE082',
+    borderColor: colors.alertWarningBorder,
   },
   alertInfo: {
-    backgroundColor: '#E3F2FD',
-    borderColor: '#90CAF9',
+    backgroundColor: colors.alertInfoBg,
+    borderColor: colors.alertInfoBorder,
   },
   alertIcon: {
     fontSize: 16,
   },
   alertText: {
     fontSize: 13,
-    color: '#333',
+    color: colors.textPrimary,
     flex: 1,
     lineHeight: 18,
   },
@@ -354,15 +356,15 @@ const styles = StyleSheet.create({
   // Section headers
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
     marginBottom: 12,
   },
   dateSectionHeader: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#666',
-    textTransform: 'uppercase',
+    fontWeight: '600' as const,
+    color: colors.textSecondary,
+    textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
     marginTop: 8,
     marginBottom: 8,
@@ -371,19 +373,19 @@ const styles = StyleSheet.create({
 
   // Empty
   emptyState: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     paddingVertical: 40,
     paddingHorizontal: 20,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
   },
 })

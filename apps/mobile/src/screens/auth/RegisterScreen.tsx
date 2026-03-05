@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -14,6 +13,8 @@ import {
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { AuthStackParamList } from '../../types/navigation'
 import { supabase } from '../../lib/supabase'
+import { useThemedStyles } from '../../theme'
+import type { ThemeColors } from '../../theme'
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Register'>
 
@@ -31,6 +32,7 @@ export default function RegisterScreen({ navigation }: Props) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [role, setRole] = useState<UserRole>('servant')
   const [loading, setLoading] = useState(false)
+  const styles = useThemedStyles(createStyles)
 
   async function handleRegister() {
     // Validation
@@ -212,107 +214,107 @@ export default function RegisterScreen({ navigation }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-  },
+    backgroundColor: colors.card,
+  } as const,
   scrollContent: {
     flexGrow: 1,
-  },
+  } as const,
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'center' as const,
     padding: 20,
     paddingTop: 40,
     paddingBottom: 40,
   },
   title: {
     fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
+    fontWeight: 'bold' as const,
+    color: colors.textPrimary,
+    textAlign: 'center' as const,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
     marginBottom: 32,
   },
   form: {
-    width: '100%',
+    width: '100%' as const,
   },
   input: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.inputBackground,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 16,
     fontSize: 16,
     marginBottom: 16,
-    color: '#333',
+    color: colors.textPrimary,
   },
   label: {
     fontSize: 16,
-    color: '#333',
-    fontWeight: '600',
+    color: colors.textPrimary,
+    fontWeight: '600' as const,
     marginBottom: 12,
     marginTop: 8,
   },
   roleContainer: {
-    flexDirection: 'row',
+    flexDirection: 'row' as const,
     gap: 8,
     marginBottom: 24,
   },
   roleButton: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.inputBackground,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
     borderRadius: 8,
     padding: 12,
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
   roleButtonActive: {
-    backgroundColor: '#E3F2FD',
-    borderColor: '#007AFF',
+    backgroundColor: colors.alertInfoBg,
+    borderColor: colors.primary,
   },
   roleText: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '600',
+    color: colors.textSecondary,
+    fontWeight: '600' as const,
   },
   roleTextActive: {
-    color: '#007AFF',
+    color: colors.onPrimaryText,
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     padding: 16,
-    alignItems: 'center',
+    alignItems: 'center' as const,
     marginTop: 8,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
-    color: '#fff',
+    color: colors.primaryText,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: 'row' as const,
+    justifyContent: 'center' as const,
     marginTop: 24,
   },
   footerText: {
     fontSize: 14,
-    color: '#666',
+    color: colors.textSecondary,
   },
   link: {
     fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '600',
+    color: colors.primary,
+    fontWeight: '600' as const,
   },
 })

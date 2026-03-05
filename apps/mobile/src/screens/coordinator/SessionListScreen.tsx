@@ -2,12 +2,12 @@ import React, { useMemo } from 'react'
 import {
   View,
   Text,
-  StyleSheet,
   SectionList,
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
 } from 'react-native'
+import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useSessions, Session } from '../../hooks/useSessions'
 import { useClasses } from '../../hooks/useClasses'
 
@@ -19,10 +19,12 @@ interface SessionListScreenProps {
   onAddSession?: (classId: string) => void
 }
 
-const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
-  scheduled: { bg: '#E3F2FD', text: '#1565C0' },
-  completed: { bg: '#E8F5E9', text: '#2E7D32' },
-  canceled: { bg: '#FFEBEE', text: '#C62828' },
+function getStatusColors(colors: ThemeColors): Record<string, { bg: string; text: string }> {
+  return {
+    scheduled: { bg: colors.alertInfoBg, text: colors.onPrimaryText },
+    completed: { bg: colors.alertSuccessBg, text: colors.alertSuccessText },
+    canceled: { bg: colors.alertDangerBg, text: colors.alertDangerText },
+  }
 }
 
 export default function SessionListScreen({
@@ -32,6 +34,10 @@ export default function SessionListScreen({
   onSessionPress,
   onAddSession,
 }: SessionListScreenProps) {
+  const styles = useThemedStyles(createStyles)
+  const { colors } = useTheme()
+  const STATUS_COLORS = getStatusColors(colors)
+
   const { sessions, loading, refetch } = useSessions(classId)
   const { getServantById } = useClasses()
 
@@ -111,7 +117,7 @@ export default function SessionListScreen({
           <Text style={styles.headerTitle}>{className}</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color={colors.primary} />
         </View>
       </View>
     )
@@ -135,7 +141,7 @@ export default function SessionListScreen({
         contentContainerStyle={styles.listContent}
         stickySectionHeadersEnabled={false}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refetch} tintColor="#007AFF" />
+          <RefreshControl refreshing={loading} onRefresh={refetch} tintColor={colors.primary} />
         }
       />
 
@@ -152,43 +158,43 @@ export default function SessionListScreen({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
+    flex: 1 as const,
+    backgroundColor: colors.background,
   },
   header: {
     padding: 20,
     paddingTop: 60,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   backButton: {
     fontSize: 16,
-    color: '#007AFF',
+    color: colors.primary,
     marginBottom: 8,
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   listContent: {
     padding: 16,
   },
   loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    flex: 1 as const,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
   },
 
   // Section headers
   sectionHeader: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
     marginTop: 12,
     marginBottom: 8,
     paddingVertical: 4,
@@ -196,38 +202,38 @@ const styles = StyleSheet.create({
 
   // Session rows
   sessionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   sessionLeft: {
-    flex: 1,
+    flex: 1 as const,
     marginRight: 12,
   },
   sessionDate: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#666',
+    fontWeight: '600' as const,
+    color: colors.textSecondary,
     marginBottom: 4,
   },
   sessionTopic: {
     fontSize: 15,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: '500' as const,
+    color: colors.textPrimary,
   },
   sessionServant: {
     fontSize: 13,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 4,
   },
   sessionRight: {
-    alignItems: 'flex-end',
+    alignItems: 'flex-end' as const,
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -236,20 +242,20 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
 
   // FAB
   fab: {
-    position: 'absolute',
+    position: 'absolute' as const,
     right: 20,
     bottom: 30,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: colors.primary,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -258,26 +264,26 @@ const styles = StyleSheet.create({
   },
   fabText: {
     fontSize: 28,
-    color: '#fff',
-    fontWeight: '400',
+    color: colors.primaryText,
+    fontWeight: '400' as const,
     marginTop: -2,
   },
 
   // Empty
   emptyState: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     paddingVertical: 40,
     paddingHorizontal: 20,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 14,
-    color: '#666',
-    textAlign: 'center',
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
   },
 })

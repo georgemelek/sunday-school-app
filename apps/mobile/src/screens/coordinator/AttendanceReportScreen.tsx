@@ -2,12 +2,11 @@ import React, { useState, useMemo } from 'react'
 import {
   View,
   Text,
-  StyleSheet,
-  FlatList,
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
 } from 'react-native'
+import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useGrades } from '../../hooks/useGrades'
 import { useStudents } from '../../hooks/useStudents'
 import { useAttendance } from '../../hooks/useAttendance'
@@ -19,6 +18,9 @@ interface AttendanceReportScreenProps {
 type DateRange = 'last30' | 'last90' | 'all'
 
 export default function AttendanceReportScreen({ onBack }: AttendanceReportScreenProps) {
+  const styles = useThemedStyles(createStyles)
+  const { colors } = useTheme()
+
   const { grades, loading: gradesLoading } = useGrades()
   const [selectedGradeId, setSelectedGradeId] = useState<string>(grades[0]?.id || '1')
   const [dateRange, setDateRange] = useState<DateRange>('last30')
@@ -60,17 +62,17 @@ export default function AttendanceReportScreen({ onBack }: AttendanceReportScree
   }, [students, getStudentAttendanceRate])
 
   function rateColor(rate: number | null): string {
-    if (rate == null) return '#999'
-    if (rate >= 80) return '#4CAF50'
-    if (rate >= 60) return '#FF9500'
-    return '#f44336'
+    if (rate == null) return colors.textMuted
+    if (rate >= 80) return colors.success
+    if (rate >= 60) return colors.warning
+    return colors.error
   }
 
   function rateBgColor(rate: number | null): string {
-    if (rate == null) return '#f0f0f0'
-    if (rate >= 80) return '#E8F5E9'
-    if (rate >= 60) return '#FFF3E0'
-    return '#FFEBEE'
+    if (rate == null) return colors.borderLight
+    if (rate >= 80) return colors.alertSuccessBg
+    if (rate >= 60) return colors.alertOrangeBg
+    return colors.alertDangerBg
   }
 
   return (
@@ -116,7 +118,7 @@ export default function AttendanceReportScreen({ onBack }: AttendanceReportScree
 
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#007AFF" />
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
         ) : (
           <>
@@ -132,11 +134,11 @@ export default function AttendanceReportScreen({ onBack }: AttendanceReportScree
                   <Text style={styles.summaryLabel}>Avg. Attendance</Text>
                 </View>
                 <View style={styles.summaryItem}>
-                  <Text style={[styles.summaryNumber, { color: '#4CAF50' }]}>{summary.present}</Text>
+                  <Text style={[styles.summaryNumber, { color: colors.success }]}>{summary.present}</Text>
                   <Text style={styles.summaryLabel}>Present</Text>
                 </View>
                 <View style={styles.summaryItem}>
-                  <Text style={[styles.summaryNumber, { color: '#f44336' }]}>{summary.absent}</Text>
+                  <Text style={[styles.summaryNumber, { color: colors.error }]}>{summary.absent}</Text>
                   <Text style={styles.summaryLabel}>Absent</Text>
                 </View>
               </View>
@@ -165,35 +167,35 @@ export default function AttendanceReportScreen({ onBack }: AttendanceReportScree
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: ThemeColors) => ({
   container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
+    flex: 1 as const,
+    backgroundColor: colors.background,
   },
   header: {
     padding: 20,
     paddingTop: 60,
     paddingBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: colors.border,
   },
   backButton: {
     fontSize: 16,
-    color: '#007AFF',
+    color: colors.primary,
     marginBottom: 8,
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   scrollContent: {
     padding: 16,
   },
   loadingContainer: {
     paddingVertical: 40,
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
 
   // Pickers
@@ -207,24 +209,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
   },
   pillSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   pillText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
+    fontWeight: '500' as const,
+    color: colors.textPrimary,
   },
   pillTextSelected: {
-    color: '#fff',
+    color: colors.primaryText,
   },
   dateRangeRow: {
-    flexDirection: 'row',
+    flexDirection: 'row' as const,
     gap: 8,
     marginBottom: 16,
   },
@@ -232,25 +234,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: colors.border,
   },
   rangePillSelected: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   rangePillText: {
     fontSize: 13,
-    color: '#333',
+    color: colors.textPrimary,
   },
   rangePillTextSelected: {
-    color: '#fff',
+    color: colors.primaryText,
   },
 
   // Summary
   summaryCard: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
@@ -260,49 +262,49 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-around' as const,
   },
   summaryItem: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
   summaryNumber: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
   },
   summaryLabel: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 4,
   },
 
   // Students
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#333',
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
     marginBottom: 12,
   },
   studentRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
+    borderColor: colors.borderLight,
   },
   studentName: {
     fontSize: 15,
-    fontWeight: '500',
-    color: '#333',
-    flex: 1,
+    fontWeight: '500' as const,
+    color: colors.textPrimary,
+    flex: 1 as const,
     marginRight: 12,
   },
   rateBadge: {
@@ -312,12 +314,12 @@ const styles = StyleSheet.create({
   },
   rateBadgeText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
   emptyText: {
     fontSize: 14,
-    color: '#999',
-    textAlign: 'center',
+    color: colors.textMuted,
+    textAlign: 'center' as const,
     paddingVertical: 20,
   },
 })
