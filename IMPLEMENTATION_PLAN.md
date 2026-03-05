@@ -74,21 +74,36 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 > Replace all mock data with real Supabase calls. This is the critical phase before any real testing.
 
 ### Authentication
-- [ ] **S.1**: Re-enable auth flow — remove placeholder role selector, wire real login/register
-- [ ] **S.2**: Test auth edge cases — email validation, password strength, session persistence
+- [x] **S.1**: Re-enable auth flow — remove placeholder role selector, wire real login/register
+- [ ] **S.2**: Test auth edge cases — email validation, password strength, session persistence *(nice-to-have, skip for now)*
 
 ### Database Migration
-- [ ] **S.3**: Run expanded schema migration — new tables for classes, sessions, availability, outreach assignments, outreach visits
-- [ ] **S.4**: Apply RLS policies for all tables (see DESIGN.md)
+- [x] **S.3**: Run expanded schema migration — new tables for classes, sessions, availability, outreach assignments, outreach visits
+- [ ] **S.4**: Apply RLS policies for all tables (see DESIGN.md) *(defer until all tables exist)*
+
+### Known Gaps / Deferred
+- **`church_id` on profiles**: No onboarding flow yet links a servant/coordinator to a church. Coordinator-scoped grade queries in `useGrades` are guarded with a TODO. Will be resolved when C.7 (Church Invitation System) is built. Until then, all users operate as servants via `servant_grades`.
+- **`database.ts` types**: Auto-generated from Supabase. Re-run after any schema change: `npx supabase gen types typescript --project-id YOUR_PROJECT_ID > apps/mobile/src/types/database.ts`. The `Grade` interface in `useGrades.ts` manually mirrors the DB type — once types are regenerated post-migration (includes `gender` on `profiles`/`students`, all new tables), import from `../types` directly and remove the local interface.
 
 ### Data Operations
-- [ ] **S.5**: Grade CRUD — replace mock hooks with real Supabase queries
-- [ ] **S.6**: Student CRUD — insert/update/delete in `students` table
-- [ ] **S.7**: Attendance — batch insert, duplicate prevention, history queries
-- [ ] **S.8**: Classes & sessions — CRUD (coordinator), read-only (servant), CSV import
-- [ ] **S.9**: Availability — upsert, date range queries, coverage calculations
-- [ ] **S.10**: Outreach — assignments, visit logging, progress queries
-- [ ] **S.11**: Real-time subscriptions — attendance, availability, session changes
+- [x] **S.5**: Grade CRUD — replace mock hooks with real Supabase queries
+- [ ] **S.6**: Servant onboarding flow — first-login multi-step setup:
+  - Step 1: What grade do you serve? (create or join a grade → `grades` + `servant_grades`)
+  - Step 2: What classes does that grade have? (create classes → `classes` + `class_grades`)
+  - Step 3: Which classes do YOU personally serve? (assign self → `class_servants`)
+  - Step 4: Upload students via CSV or add manually
+  - Shown automatically when a logged-in servant has no grades yet; skippable at each step
+- [ ] **S.7**: Student CSV import
+  - Downloadable template (one-click) with columns: first name, last name, DOB, student phone, mother email, mother phone, father email, father phone, street, city, state, zip, country, notes, gender
+  - App parses uploaded CSV/Excel and bulk-inserts into `students` table
+  - Servant can alternatively add students one-by-one via existing AddStudentScreen
+  - Address stored split across fields (street, city, state, zip, country) — cleaner for Maps linking and future filtering
+- [ ] **S.8**: Student CRUD — insert/update/delete in `students` table (wire AddStudentScreen/EditStudentScreen to Supabase)
+- [ ] **S.9**: Attendance — batch insert, duplicate prevention, history queries
+- [ ] **S.10**: Classes & sessions — CRUD for servant-created classes, session list read
+- [ ] **S.11**: Availability — upsert, date range queries, coverage calculations
+- [ ] **S.12**: Outreach — assignments, visit logging, progress queries
+- [ ] **S.13**: Real-time subscriptions — attendance, availability, session changes
 
 ---
 

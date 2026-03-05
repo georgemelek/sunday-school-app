@@ -1,6 +1,6 @@
 import React from 'react'
 import { View, Text, TouchableOpacity } from 'react-native'
-import { Grade } from '../hooks/useGrades'
+import { GradeWithStats as Grade } from '../hooks/useGrades'
 import { useThemedStyles, useTheme, ThemeColors } from '../theme'
 
 interface GradeCardProps {

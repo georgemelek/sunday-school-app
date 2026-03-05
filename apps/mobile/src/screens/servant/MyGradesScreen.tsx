@@ -11,7 +11,6 @@ import {
   RefreshControl,
 } from 'react-native'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
-// import { useAuth } from '../../contexts/AuthContext'
 import { useGrades } from '../../hooks/useGrades'
 import { GradeCard } from '../../components/GradeCard'
 
@@ -23,7 +22,6 @@ interface MyGradesScreenProps {
 export default function MyGradesScreen({ onGradePress, onBack }: MyGradesScreenProps) {
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
-  // const { profile, signOut } = useAuth()
   const { grades, loading, error, refetch, createGrade } = useGrades()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [newGradeName, setNewGradeName] = useState('')

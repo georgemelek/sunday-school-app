@@ -20,6 +20,7 @@ import type {
 
 // Auth
 import { useAuth } from '../contexts/AuthContext'
+import { useTour } from '../contexts/TourContext'
 
 // Theme
 import { useTheme, useThemedStyles, ThemeColors, ThemePreference } from '../theme'
@@ -707,7 +708,7 @@ function AuthStackNavigator({ onTakeTour }: { onTakeTour: () => void }) {
 export default function RootNavigator() {
   const { session, profile, loading, refreshProfile } = useAuth()
   const { colors, isDark } = useTheme()
-  const [isTourMode, setIsTourMode] = React.useState(false)
+  const { isTourMode, startTour, endTour } = useTour()
 
   const navTheme = isDark
     ? { ...DarkTheme, colors: { ...DarkTheme.colors, background: colors.background, card: colors.card } }
@@ -726,7 +727,7 @@ export default function RootNavigator() {
   if (!session && isTourMode) {
     return (
       <NavigationContainer theme={navTheme}>
-        <ServantTabNavigator isTourMode onSignIn={() => setIsTourMode(false)} />
+        <ServantTabNavigator isTourMode onSignIn={endTour} />
       </NavigationContainer>
     )
   }
@@ -735,7 +736,7 @@ export default function RootNavigator() {
   if (!session) {
     return (
       <NavigationContainer theme={navTheme}>
-        <AuthStackNavigator onTakeTour={() => setIsTourMode(true)} />
+        <AuthStackNavigator onTakeTour={startTour} />
       </NavigationContainer>
     )
   }
