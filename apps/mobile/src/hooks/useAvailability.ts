@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTour } from '../contexts/TourContext'
 // import { supabase } from '../lib/supabase'
 
 export interface AvailabilityRecord {
@@ -128,13 +129,14 @@ function buildMockAvailability(): AvailabilityRecord[] {
 const ALL_MOCK_AVAILABILITY = buildMockAvailability()
 
 export function useAvailability(servantId?: string) {
+  const { isTourMode } = useTour()
   const [availability, setAvailability] = useState<AvailabilityRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchAvailability()
-  }, [servantId])
+  }, [servantId, isTourMode])
 
   async function fetchAvailability() {
     setLoading(true)
@@ -154,13 +156,16 @@ export function useAvailability(servantId?: string) {
       // const { data, error: fetchError } = await query
       // if (fetchError) throw fetchError
 
-      // Mock data for development
-      await new Promise(resolve => setTimeout(resolve, 500))
+      if (!isTourMode) {
+        // TODO: S.11 — replace with real Supabase query
+        setAvailability([])
+        return
+      }
 
+      await new Promise(resolve => setTimeout(resolve, 500))
       const filtered = servantId
         ? ALL_MOCK_AVAILABILITY.filter(r => r.servantId === servantId)
         : ALL_MOCK_AVAILABILITY
-
       setAvailability(filtered)
     } catch (err: any) {
       setError(err.message || 'Failed to fetch availability')

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTour } from '../contexts/TourContext'
 // import { supabase } from '../lib/supabase'
 
 export interface Session {
@@ -162,13 +163,14 @@ function buildMockSessions(): Session[] {
 const ALL_MOCK_SESSIONS = buildMockSessions()
 
 export function useSessions(classId?: string) {
+  const { isTourMode } = useTour()
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchSessions()
-  }, [classId])
+  }, [classId, isTourMode])
 
   async function fetchSessions() {
     setLoading(true)
@@ -188,13 +190,16 @@ export function useSessions(classId?: string) {
       // const { data, error: fetchError } = await query
       // if (fetchError) throw fetchError
 
-      // Mock data for development
-      await new Promise(resolve => setTimeout(resolve, 500))
+      if (!isTourMode) {
+        // TODO: S.10 — replace with real Supabase query
+        setSessions([])
+        return
+      }
 
+      await new Promise(resolve => setTimeout(resolve, 500))
       const filtered = classId
         ? ALL_MOCK_SESSIONS.filter(s => s.classId === classId)
         : ALL_MOCK_SESSIONS
-
       setSessions(filtered)
     } catch (err: any) {
       setError(err.message || 'Failed to fetch sessions')

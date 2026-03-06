@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTour } from '../contexts/TourContext'
 // import { supabase } from '../lib/supabase'
 import type { Student } from './useStudents'
 
@@ -104,6 +105,7 @@ const MOCK_VISITS: OutreachVisit[] = [
 ]
 
 export function useOutreach() {
+  const { isTourMode } = useTour()
   const [assignedKids, setAssignedKids] = useState<AssignedKid[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -113,12 +115,11 @@ export function useOutreach() {
     setError(null)
 
     try {
-      // TODO: Replace with actual Supabase query
-      // const { data, error: fetchError } = await supabase
-      //   .from('outreach_assignments')
-      //   .select('*, student:students(*), visits:outreach_visits(*)')
-      //   .eq('servant_id', currentUserId)
-      //   .order('student.name')
+      if (!isTourMode) {
+        // TODO: S.12 — replace with real Supabase query
+        setAssignedKids([])
+        return
+      }
 
       await new Promise(resolve => setTimeout(resolve, 500))
 
@@ -142,7 +143,7 @@ export function useOutreach() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [isTourMode])
 
   useEffect(() => {
     fetchOutreach()
