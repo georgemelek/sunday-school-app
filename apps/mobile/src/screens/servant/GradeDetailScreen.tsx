@@ -23,6 +23,7 @@ interface GradeDetailScreenProps {
   onAddStudent?: () => void
   onEditStudent?: (student: any) => void
   onTakeAttendance?: () => void
+  onImportStudents?: () => void
 }
 
 export default function GradeDetailScreen({
@@ -32,6 +33,7 @@ export default function GradeDetailScreen({
   onAddStudent,
   onEditStudent,
   onTakeAttendance,
+  onImportStudents,
 }: GradeDetailScreenProps) {
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
@@ -93,10 +95,13 @@ export default function GradeDetailScreen({
       <Text style={styles.emptyIcon}>👥</Text>
       <Text style={styles.emptyTitle}>No Students Yet</Text>
       <Text style={styles.emptyText}>
-        Add your first student to start tracking attendance
+        Add students one by one or import a CSV file to get started quickly.
       </Text>
       <TouchableOpacity style={styles.emptyButton} onPress={handleAddStudentPress}>
         <Text style={styles.emptyButtonText}>Add Student</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.emptyButtonSecondary} onPress={() => onImportStudents?.()}>
+        <Text style={styles.emptyButtonSecondaryText}>⬆ Import from CSV</Text>
       </TouchableOpacity>
     </View>
   )
@@ -219,13 +224,19 @@ export default function GradeDetailScreen({
                 style={[styles.actionButton, styles.primaryButton]}
                 onPress={handleTakeAttendance}
               >
-                <Text style={styles.primaryButtonText}>✓ Take Attendance</Text>
+                <Text style={styles.primaryButtonText}>✓ Attendance</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionButton, styles.secondaryButton]}
                 onPress={handleAddStudentPress}
               >
-                <Text style={styles.secondaryButtonText}>+ Add Student</Text>
+                <Text style={styles.secondaryButtonText}>+ Add</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.secondaryButton]}
+                onPress={() => onImportStudents?.()}
+              >
+                <Text style={styles.secondaryButtonText}>⬆ Import</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -383,6 +394,19 @@ const createStyles = (colors: ThemeColors) => ({
   },
   emptyButtonText: {
     color: colors.primaryText,
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  emptyButtonSecondary: {
+    marginTop: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  emptyButtonSecondaryText: {
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '600' as const,
   },

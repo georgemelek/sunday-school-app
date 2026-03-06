@@ -36,6 +36,7 @@ import OnboardingScreen from '../screens/servant/OnboardingScreen'
 import GradeDetailScreen from '../screens/servant/GradeDetailScreen'
 import AddStudentScreen from '../screens/servant/AddStudentScreen'
 import EditStudentScreen from '../screens/servant/EditStudentScreen'
+import ImportStudentsScreen from '../screens/servant/ImportStudentsScreen'
 import TakeAttendanceScreen from '../screens/servant/TakeAttendanceScreen'
 import SessionDetailScreen from '../screens/servant/SessionDetailScreen'
 import AvailabilityScreen from '../screens/servant/AvailabilityScreen'
@@ -164,6 +165,12 @@ function GradesStackNavigator() {
                 gradeName: route.params.gradeName,
               })
             }
+            onImportStudents={() =>
+              navigation.navigate('ImportStudents', {
+                gradeId: route.params.gradeId,
+                gradeName: route.params.gradeName,
+              })
+            }
           />
         )}
       </GradesStack.Screen>
@@ -195,6 +202,17 @@ function GradesStackNavigator() {
             gradeId={route.params.gradeId}
             gradeName={route.params.gradeName}
             onBack={() => navigation.goBack()}
+          />
+        )}
+      </GradesStack.Screen>
+
+      <GradesStack.Screen name="ImportStudents">
+        {({ navigation, route }) => (
+          <ImportStudentsScreen
+            gradeId={route.params.gradeId}
+            gradeName={route.params.gradeName}
+            onBack={() => navigation.goBack()}
+            onImportComplete={() => navigation.goBack()}
           />
         )}
       </GradesStack.Screen>

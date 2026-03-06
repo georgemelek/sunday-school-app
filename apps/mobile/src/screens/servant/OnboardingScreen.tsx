@@ -14,6 +14,7 @@ import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { supabase } from '../../lib/supabase'
 import { TABLES } from '../../lib/tables'
 import { useAuth } from '../../contexts/AuthContext'
+import ImportStudentsScreen from './ImportStudentsScreen'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -164,6 +165,9 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
   const [grades, setGrades] = useState<GradeEntry[]>([{ id: 'g0', name: '' }])
   const [classes, setClasses] = useState<ClassDefinition[]>([])
   const [myClassIds, setMyClassIds] = useState<Set<string>>(new Set())
+
+  // Set after save completes — used by step 4 (import students)
+  const [savedGradeIds, setSavedGradeIds] = useState<{ id: string; name: string }[]>([])
 
   const isMultiGrade = grades.length > 1
 
@@ -328,7 +332,10 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
         }
       }
 
-      onComplete()
+      // Advance to step 4 (import students) with the real grade IDs
+      const savedGrades = grades.map(g => ({ id: gradeIdMap[g.id], name: g.name.trim() }))
+      setSavedGradeIds(savedGrades)
+      setStep(3)
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Something went wrong. Please try again.')
     } finally {
@@ -470,6 +477,50 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
     )
   }
 
+  // ── Step 4: Import students ──────────────────────────────────────────────────
+
+  // Step 4 is rendered as a full-screen overlay using ImportStudentsScreen
+  // We pick the first saved grade to import into (most common case: single grade)
+  const [importGradeIndex, setImportGradeIndex] = useState(0)
+
+  function renderStep4() {
+    const gradeForImport = savedGradeIds[importGradeIndex]
+    if (!gradeForImport) return null
+
+    return (
+      <View style={{ flex: 1, marginHorizontal: -24, marginTop: -24 }}>
+        {savedGradeIds.length > 1 && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 16, paddingBottom: 0 }}>
+            {savedGradeIds.map((g, i) => (
+              <TouchableOpacity
+                key={g.id}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  borderWidth: 1,
+                  borderColor: i === importGradeIndex ? colors.primary : colors.border,
+                  backgroundColor: i === importGradeIndex ? colors.primary : colors.inputBackground,
+                }}
+                onPress={() => setImportGradeIndex(i)}
+              >
+                <Text style={{ fontSize: 14, color: i === importGradeIndex ? colors.primaryText : colors.textSecondary }}>
+                  {g.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+        <ImportStudentsScreen
+          gradeId={gradeForImport.id}
+          gradeName={gradeForImport.name}
+          onBack={onComplete}
+          onImportComplete={onComplete}
+        />
+      </View>
+    )
+  }
+
   // ── Navigation ───────────────────────────────────────────────────────────────
 
   function handleNext() {
@@ -484,7 +535,7 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
     setStep(s => s + 1)
   }
 
-  const stepContent = [renderStep1, renderStep2, renderStep3]
+  const stepContent = [renderStep1, renderStep2, renderStep3, renderStep4]
   const isLastStep = step === stepContent.length - 1
 
   return (
@@ -502,23 +553,25 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
           {stepContent[step]()}
         </ScrollView>
 
-        <View style={styles.footer}>
-          {step > 0 && (
-            <TouchableOpacity style={styles.backButton} onPress={() => setStep(s => s - 1)} disabled={saving}>
-              <Text style={styles.backButtonText}>‹ Back</Text>
+        {step < 3 && (
+          <View style={styles.footer}>
+            {step > 0 && (
+              <TouchableOpacity style={styles.backButton} onPress={() => setStep(s => s - 1)} disabled={saving}>
+                <Text style={styles.backButtonText}>‹ Back</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={[styles.nextButton, saving && { opacity: 0.6 }]}
+              onPress={step === 2 ? handleFinish : handleNext}
+              disabled={saving}
+            >
+              {saving
+                ? <ActivityIndicator color={colors.primaryText} />
+                : <Text style={styles.nextButtonText}>{step === 2 ? 'Save & Continue →' : 'Next →'}</Text>
+              }
             </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={[styles.nextButton, saving && { opacity: 0.6 }]}
-            onPress={isLastStep ? handleFinish : handleNext}
-            disabled={saving}
-          >
-            {saving
-              ? <ActivityIndicator color={colors.primaryText} />
-              : <Text style={styles.nextButtonText}>{isLastStep ? 'Finish' : 'Next →'}</Text>
-            }
-          </TouchableOpacity>
-        </View>
+          </View>
+        )}
       </View>
     </KeyboardAvoidingView>
   )

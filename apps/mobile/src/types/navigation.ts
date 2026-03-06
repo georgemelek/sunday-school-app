@@ -31,6 +31,7 @@ export type GradesStackParamList = {
   AddStudent: { gradeId: string; gradeName: string }
   EditStudent: { gradeId: string; gradeName: string; student: Student }
   TakeAttendance: { gradeId: string; gradeName: string }
+  ImportStudents: { gradeId: string; gradeName: string }
 }
 
 // --- Availability Stack ---
