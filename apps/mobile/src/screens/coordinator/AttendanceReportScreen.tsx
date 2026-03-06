@@ -8,7 +8,7 @@ import {
 } from 'react-native'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useGrades } from '../../hooks/useGrades'
-import { useStudents } from '../../hooks/useStudents'
+import { useStudents, studentDisplayName } from '../../hooks/useStudents'
 import { useAttendance } from '../../hooks/useAttendance'
 
 interface AttendanceReportScreenProps {
@@ -148,7 +148,7 @@ export default function AttendanceReportScreen({ onBack }: AttendanceReportScree
             <Text style={styles.sectionTitle}>Students</Text>
             {studentStats.map(student => (
               <View key={student.id} style={styles.studentRow}>
-                <Text style={styles.studentName} numberOfLines={1}>{student.name}</Text>
+                <Text style={styles.studentName} numberOfLines={1}>{studentDisplayName(student)}</Text>
                 <View style={[styles.rateBadge, { backgroundColor: rateBgColor(student.attendanceRate) }]}>
                   <Text style={[styles.rateBadgeText, { color: rateColor(student.attendanceRate) }]}>
                     {student.attendanceRate != null ? `${student.attendanceRate}%` : 'N/A'}

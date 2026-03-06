@@ -622,6 +622,8 @@ export type Database = {
           created_by: string | null
           date_of_birth: string | null
           father_email: string | null
+          father_first_name: string | null
+          father_last_name: string | null
           father_phone: string | null
           first_name: string | null
           gender: string | null
@@ -629,6 +631,8 @@ export type Database = {
           id: string
           last_name: string | null
           mother_email: string | null
+          mother_first_name: string | null
+          mother_last_name: string | null
           mother_phone: string | null
           notes: string | null
           state: string | null
@@ -644,6 +648,8 @@ export type Database = {
           created_by?: string | null
           date_of_birth?: string | null
           father_email?: string | null
+          father_first_name?: string | null
+          father_last_name?: string | null
           father_phone?: string | null
           first_name?: string | null
           gender?: string | null
@@ -651,6 +657,8 @@ export type Database = {
           id?: string
           last_name?: string | null
           mother_email?: string | null
+          mother_first_name?: string | null
+          mother_last_name?: string | null
           mother_phone?: string | null
           notes?: string | null
           state?: string | null
@@ -666,6 +674,8 @@ export type Database = {
           created_by?: string | null
           date_of_birth?: string | null
           father_email?: string | null
+          father_first_name?: string | null
+          father_last_name?: string | null
           father_phone?: string | null
           first_name?: string | null
           gender?: string | null
@@ -673,6 +683,8 @@ export type Database = {
           id?: string
           last_name?: string | null
           mother_email?: string | null
+          mother_first_name?: string | null
+          mother_last_name?: string | null
           mother_phone?: string | null
           notes?: string | null
           state?: string | null

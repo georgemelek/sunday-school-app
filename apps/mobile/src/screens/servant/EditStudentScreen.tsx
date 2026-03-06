@@ -1,5 +1,5 @@
 import React from 'react'
-import { useStudents, Student } from '../../hooks/useStudents'
+import { useStudents, Student, StudentFormData } from '../../hooks/useStudents'
 import StudentFormScreen from './StudentFormScreen'
 
 interface EditStudentScreenProps {
@@ -17,8 +17,8 @@ export default function EditStudentScreen({
 }: EditStudentScreenProps) {
   const { updateStudent } = useStudents(gradeId)
 
-  const handleSave = async (studentData: Partial<Student>) => {
-    return await updateStudent(student.id, studentData)
+  const handleSave = async (formData: StudentFormData) => {
+    return await updateStudent(student.id, formData)
   }
 
   return (

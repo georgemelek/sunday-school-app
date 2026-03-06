@@ -1,6 +1,7 @@
 import React from 'react'
 import { View, Text, TouchableOpacity } from 'react-native'
 import type { AssignedKid } from '../hooks/useOutreach'
+import { studentDisplayName } from '../hooks/useStudents'
 import { useThemedStyles, ThemeColors } from '../theme'
 
 interface OutreachKidCardProps {
@@ -21,7 +22,8 @@ export function OutreachKidCard({
   const styles = useThemedStyles(createStyles)
 
   const { student, assignment, lastVisit } = assignedKid
-  const initial = student.name.charAt(0).toUpperCase()
+  const displayName = studentDisplayName(student)
+  const initial = displayName.charAt(0).toUpperCase()
   const hasVisit = !!lastVisit
 
   const visitLabel = hasVisit
@@ -36,7 +38,7 @@ export function OutreachKidCard({
         </View>
 
         <View style={styles.info}>
-          <Text style={styles.name}>{student.name}</Text>
+          <Text style={styles.name}>{displayName}</Text>
           <Text style={styles.grade}>{assignment.gradeName}</Text>
           <View style={[styles.badge, hasVisit ? styles.badgeGreen : styles.badgeGray]}>
             <Text style={[styles.badgeText, hasVisit ? styles.badgeTextGreen : styles.badgeTextGray]}>
@@ -47,7 +49,7 @@ export function OutreachKidCard({
           <View style={styles.actions}>
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => student.parent_phone && onCall?.(student.parent_phone)}
+              onPress={() => { const p = student.mother_phone || student.father_phone; p && onCall?.(p) }}
             >
               <Text style={styles.actionIcon}>{'📞'}</Text>
               <Text style={styles.actionLabel}>Call</Text>
@@ -55,7 +57,7 @@ export function OutreachKidCard({
 
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => onMap?.(student.address, student.city)}
+              onPress={() => onMap?.(student.street ?? undefined, student.city ?? undefined)}
             >
               <Text style={styles.actionIcon}>{'📍'}</Text>
               <Text style={styles.actionLabel}>Map</Text>
@@ -63,7 +65,7 @@ export function OutreachKidCard({
 
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => student.parent_phone && onMessage?.(student.name, student.parent_phone)}
+              onPress={() => { const p = student.mother_phone || student.father_phone; p && onMessage?.(displayName, p) }}
             >
               <Text style={styles.actionIcon}>{'💬'}</Text>
               <Text style={styles.actionLabel}>Message</Text>

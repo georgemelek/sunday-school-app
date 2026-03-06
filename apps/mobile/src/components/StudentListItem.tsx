@@ -1,6 +1,6 @@
 import React from 'react'
 import { View, Text, TouchableOpacity } from 'react-native'
-import { Student } from '../hooks/useStudents'
+import { Student, studentDisplayName } from '../hooks/useStudents'
 import { useThemedStyles, ThemeColors } from '../theme'
 
 interface StudentListItemProps {
@@ -23,25 +23,19 @@ export function StudentListItem({ student, onPress }: StudentListItemProps) {
     return age
   }
 
-  const age = getAge(student.date_of_birth)
+  const age = getAge(student.date_of_birth ?? undefined)
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{student.name.charAt(0).toUpperCase()}</Text>
+        <Text style={styles.avatarText}>{studentDisplayName(student).charAt(0).toUpperCase()}</Text>
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.name}>{student.name}</Text>
+        <Text style={styles.name}>{studentDisplayName(student)}</Text>
         <View style={styles.detailsRow}>
           {age !== null && (
             <Text style={styles.detail}>{age} years old</Text>
-          )}
-          {student.parent_name && (
-            <>
-              {age !== null && <Text style={styles.separator}>•</Text>}
-              <Text style={styles.detail}>{student.parent_name}</Text>
-            </>
           )}
         </View>
         {student.notes && (

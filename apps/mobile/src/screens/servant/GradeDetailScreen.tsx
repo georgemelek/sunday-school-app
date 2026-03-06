@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
-import { useStudents } from '../../hooks/useStudents'
+import { useStudents, studentDisplayName } from '../../hooks/useStudents'
 import { StudentListItem } from '../../components/StudentListItem'
 import AttendanceHistoryView from '../../components/AttendanceHistoryView'
 
@@ -40,7 +40,7 @@ export default function GradeDetailScreen({
   const [activeTab, setActiveTab] = useState<Tab>('students')
 
   const filteredStudents = students.filter(student =>
-    student.name.toLowerCase().includes(searchQuery.toLowerCase())
+    studentDisplayName(student).toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   const handleStudentPress = (studentId: string) => {

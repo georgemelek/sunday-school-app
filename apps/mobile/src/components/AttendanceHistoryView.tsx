@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
 } from 'react-native'
 import { useAttendance } from '../hooks/useAttendance'
-import { Student } from '../hooks/useStudents'
+import { Student, studentDisplayName } from '../hooks/useStudents'
 import { useThemedStyles, ThemeColors } from '../theme'
 
 interface AttendanceHistoryViewProps {
@@ -46,7 +46,8 @@ export default function AttendanceHistoryView({
   const dates = getUniqueDates()
 
   const getStudentName = (studentId: string) => {
-    return students.find(s => s.id === studentId)?.name || 'Unknown'
+    const s = students.find(s => s.id === studentId)
+    return s ? studentDisplayName(s) : 'Unknown'
   }
 
   const toggleDateExpand = (date: string) => {
@@ -104,10 +105,10 @@ export default function AttendanceHistoryView({
       <View style={styles.studentCard}>
         <View style={styles.studentRow}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{student.name.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.avatarText}>{studentDisplayName(student).charAt(0).toUpperCase()}</Text>
           </View>
           <View style={styles.studentInfo}>
-            <Text style={styles.studentName}>{student.name}</Text>
+            <Text style={styles.studentName}>{studentDisplayName(student)}</Text>
             <Text style={styles.studentStat}>
               {presentCount}/{studentRecords.length} sessions attended
             </Text>

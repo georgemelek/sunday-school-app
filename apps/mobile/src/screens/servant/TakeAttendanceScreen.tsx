@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
-import { useStudents, Student } from '../../hooks/useStudents'
+import { useStudents, Student, studentDisplayName } from '../../hooks/useStudents'
 import { useAttendance, AttendanceEntry } from '../../hooks/useAttendance'
 
 interface TakeAttendanceScreenProps {
@@ -142,14 +142,17 @@ export default function TakeAttendanceScreen({
         <View style={styles.studentRow}>
           {/* Avatar */}
           <View style={[styles.avatar, !isPresent && styles.avatarAbsent]}>
-            <Text style={styles.avatarText}>{item.name.charAt(0).toUpperCase()}</Text>
+            <Text style={styles.avatarText}>{studentDisplayName(item).charAt(0).toUpperCase()}</Text>
           </View>
 
           {/* Name */}
           <View style={styles.studentInfo}>
-            <Text style={styles.studentName}>{item.name}</Text>
-            {item.parent_name && (
-              <Text style={styles.studentDetail}>{item.parent_name}</Text>
+            <Text style={styles.studentName}>{studentDisplayName(item)}</Text>
+            {(item.mother_first_name || item.father_first_name) && (
+              <Text style={styles.studentDetail}>
+                {[item.mother_first_name, item.mother_last_name].filter(Boolean).join(' ') ||
+                 [item.father_first_name, item.father_last_name].filter(Boolean).join(' ')}
+              </Text>
             )}
           </View>
 

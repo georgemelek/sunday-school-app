@@ -12,6 +12,7 @@ import {
 } from 'react-native'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import type { AssignedKid } from '../../hooks/useOutreach'
+import { studentDisplayName } from '../../hooks/useStudents'
 import { fillTemplate, DEFAULT_MESSAGE_TEMPLATE } from '../../utils/outreachTemplates'
 
 interface OutreachDetailScreenProps {
@@ -30,38 +31,43 @@ export default function OutreachDetailScreen({
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
   const { student, assignment, visits } = assignedKid
+  const displayName = studentDisplayName(student)
+  const parentPhone = student.mother_phone || student.father_phone
+  const motherName = [student.mother_first_name, student.mother_last_name].filter(Boolean).join(' ')
+  const fatherName = [student.father_first_name, student.father_last_name].filter(Boolean).join(' ')
+  const parentName = motherName || fatherName || null
 
   const [modalVisible, setModalVisible] = useState(false)
   const [visitDate, setVisitDate] = useState(todayString())
   const [visitNotes, setVisitNotes] = useState('')
 
-  const initial = student.name.charAt(0).toUpperCase()
+  const initial = displayName.charAt(0).toUpperCase()
 
   function handleCall() {
-    if (!student.parent_phone) {
+    if (!parentPhone) {
       Alert.alert('No Phone', 'No phone number on file.')
       return
     }
-    Linking.openURL(`tel:${student.parent_phone}`)
+    Linking.openURL(`tel:${parentPhone}`)
   }
 
   function handleMap() {
-    const query = student.address || student.city
+    const query = student.street || student.city
     if (!query) {
       Alert.alert('No Address', 'No address or city on file.')
       return
     }
-    const full = student.address && student.city ? `${student.address}, ${student.city}` : query
+    const full = student.street && student.city ? `${student.street}, ${student.city}` : query
     Linking.openURL(`maps://?q=${encodeURIComponent(full)}`)
   }
 
   function handleMessage() {
-    if (!student.parent_phone) {
+    if (!parentPhone) {
       Alert.alert('No Phone', 'No phone number on file.')
       return
     }
-    const body = fillTemplate(DEFAULT_MESSAGE_TEMPLATE, student.name, SERVANT_NAME)
-    Linking.openURL(`sms:${student.parent_phone}&body=${encodeURIComponent(body)}`)
+    const body = fillTemplate(DEFAULT_MESSAGE_TEMPLATE, displayName, SERVANT_NAME)
+    Linking.openURL(`sms:${parentPhone}&body=${encodeURIComponent(body)}`)
   }
 
   function handleSaveVisit() {
@@ -79,7 +85,7 @@ export default function OutreachDetailScreen({
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <Text style={styles.backText}>{'\u2039'} Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{student.name}</Text>
+        <Text style={styles.headerTitle}>{displayName}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -88,10 +94,10 @@ export default function OutreachDetailScreen({
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{initial}</Text>
           </View>
-          <Text style={styles.infoName}>{student.name}</Text>
+          <Text style={styles.infoName}>{displayName}</Text>
           <Text style={styles.infoGrade}>{assignment.gradeName}</Text>
-          {student.parent_name && (
-            <Text style={styles.infoParent}>Parent: {student.parent_name}</Text>
+          {parentName && (
+            <Text style={styles.infoParent}>Parent: {parentName}</Text>
           )}
         </View>
 
