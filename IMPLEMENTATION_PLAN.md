@@ -72,6 +72,7 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 ## Phase 4: Supabase Integration (UP NEXT)
 
 > Replace all mock data with real Supabase calls. This is the critical phase before any real testing.
+> **Tour mode**: Every hook must preserve mock data for tour mode (check `isTourMode` from `useTour()` before Supabase calls — see `useStudents.ts` for the pattern).
 
 ### Authentication
 - [x] **S.1**: Re-enable auth flow — remove placeholder role selector, wire real login/register
@@ -87,22 +88,22 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 
 ### Data Operations
 - [x] **S.5**: Grade CRUD — replace mock hooks with real Supabase queries
-- [ ] **S.6**: Servant onboarding flow — first-login multi-step setup:
+- [x] **S.6**: Servant onboarding flow — first-login multi-step setup:
   - Step 1: What grade do you serve? (create or join a grade → `grades` + `servant_grades`)
   - Step 2: What classes does that grade have? (create classes → `classes` + `class_grades`)
   - Step 3: Which classes do YOU personally serve? (assign self → `class_servants`)
   - Step 4: Upload students via CSV or add manually
   - Shown automatically when a logged-in servant has no grades yet; skippable at each step
-- [ ] **S.7**: Student CSV import
+- [x] **S.7**: Student CSV import
   - Downloadable template (one-click) with columns: first name, last name, DOB, student phone, mother email, mother phone, father email, father phone, street, city, state, zip, country, notes, gender
   - App parses uploaded CSV/Excel and bulk-inserts into `students` table
   - Servant can alternatively add students one-by-one via existing AddStudentScreen
   - Address stored split across fields (street, city, state, zip, country) — cleaner for Maps linking and future filtering
-- [ ] **S.8**: Student CRUD — insert/update/delete in `students` table (wire AddStudentScreen/EditStudentScreen to Supabase)
-- [ ] **S.9**: Attendance — batch insert, duplicate prevention, history queries
-- [ ] **S.10**: Classes & sessions — CRUD for servant-created classes, session list read
-- [ ] **S.11**: Availability — upsert, date range queries, coverage calculations
-- [ ] **S.12**: Outreach — assignments, visit logging, progress queries
+- [x] **S.8**: Student CRUD — insert/update/delete in `students` table (wire AddStudentScreen/EditStudentScreen to Supabase)
+- [x] **S.9**: Attendance — batch insert (upsert on student_id+date), history queries; tour mode uses mock data like useStudents pattern
+- [ ] **S.10**: Classes & sessions — CRUD for servant-created classes, session list read; tour mode uses mock data
+- [ ] **S.11**: Availability — upsert, date range queries, coverage calculations; tour mode uses mock data
+- [ ] **S.12**: Outreach — assignments, visit logging, progress queries; tour mode uses mock data
 - [ ] **S.13**: Real-time subscriptions — attendance, availability, session changes
 
 ---

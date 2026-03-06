@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react'
-// import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
+import { TABLES } from '../lib/tables'
+import { useAuth } from '../contexts/AuthContext'
+import { useTour } from '../contexts/TourContext'
 
 export interface AttendanceRecord {
   id: string
   date: string
-  student_id: string
-  grade_id: string
+  student_id: string | null
+  grade_id: string | null
   present: boolean
   notes: string | null
   recorded_by: string | null
-  created_at: string
+  created_at: string | null
 }
 
 export interface AttendanceEntry {
@@ -18,7 +21,44 @@ export interface AttendanceEntry {
   notes: string
 }
 
+// ── Mock data (tour mode only) ────────────────────────────────────────────────
+
+function buildMockRecords(gradeId: string): AttendanceRecord[] {
+  const studentIds = ['mock-s-1', 'mock-s-2', 'mock-s-3']
+  const dates = [
+    '2026-02-22', '2026-02-15', '2026-02-08', '2026-02-01',
+    '2026-01-25', '2026-01-18',
+  ]
+  const records: AttendanceRecord[] = []
+  let idCounter = 1
+
+  for (const date of dates) {
+    for (const studentId of studentIds) {
+      const present = !(date === '2026-02-22' && studentId === 'mock-s-3')
+        && !(date === '2026-02-08' && studentId === 'mock-s-1')
+        && !(date === '2026-01-25' && studentId === 'mock-s-2')
+
+      records.push({
+        id: `mock-att-${idCounter++}`,
+        date,
+        student_id: studentId,
+        grade_id: gradeId,
+        present,
+        notes: !present && studentId === 'mock-s-3' ? 'Sick' : null,
+        recorded_by: 'mock-user-1',
+        created_at: `${date}T10:00:00Z`,
+      })
+    }
+  }
+
+  return records
+}
+
+// ── Hook ──────────────────────────────────────────────────────────────────────
+
 export function useAttendance(gradeId: string) {
+  const { profile } = useAuth()
+  const { isTourMode } = useTour()
   const [records, setRecords] = useState<AttendanceRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -27,57 +67,27 @@ export function useAttendance(gradeId: string) {
     if (gradeId) {
       fetchAttendance()
     }
-  }, [gradeId])
+  }, [gradeId, isTourMode])
 
   async function fetchAttendance() {
     setLoading(true)
     setError(null)
 
     try {
-      // TODO: Replace with actual Supabase query
-      // const { data, error: fetchError } = await supabase
-      //   .from('attendance')
-      //   .select('*')
-      //   .eq('grade_id', gradeId)
-      //   .order('date', { ascending: false })
-
-      // if (fetchError) throw fetchError
-
-      // Mock data for development
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      // Generate several weeks of mock attendance history
-      const studentIds = ['1', '2', '3', '4']
-      const mockRecords: AttendanceRecord[] = []
-      let idCounter = 1
-
-      const dates = [
-        '2026-02-22', '2026-02-15', '2026-02-08', '2026-02-01',
-        '2026-01-25', '2026-01-18',
-      ]
-
-      for (const date of dates) {
-        for (const studentId of studentIds) {
-          // Randomize attendance: ~80% present
-          const present = !(date === '2026-02-22' && studentId === '3')
-            && !(date === '2026-02-08' && studentId === '1')
-            && !(date === '2026-01-25' && studentId === '2')
-            && !(date === '2026-01-25' && studentId === '4')
-
-          mockRecords.push({
-            id: String(idCounter++),
-            date,
-            student_id: studentId,
-            grade_id: gradeId,
-            present,
-            notes: !present && studentId === '3' ? 'Sick' : null,
-            recorded_by: 'user-1',
-            created_at: `${date}T10:00:00Z`,
-          })
-        }
+      if (isTourMode) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        setRecords(buildMockRecords(gradeId))
+        return
       }
 
-      setRecords(mockRecords)
+      const { data, error: fetchError } = await supabase
+        .from(TABLES.ATTENDANCE)
+        .select('*')
+        .eq('grade_id', gradeId)
+        .order('date', { ascending: false })
+
+      if (fetchError) throw fetchError
+      setRecords(data ?? [])
     } catch (err: any) {
       setError(err.message || 'Failed to fetch attendance')
       setRecords([])
@@ -87,51 +97,41 @@ export function useAttendance(gradeId: string) {
   }
 
   async function submitAttendance(date: string, entries: AttendanceEntry[]) {
-    try {
-      // TODO: Replace with actual Supabase batch insert
-      // const { error: insertError } = await supabase
-      //   .from('attendance')
-      //   .upsert(
-      //     entries.map(entry => ({
-      //       date,
-      //       student_id: entry.student_id,
-      //       grade_id: gradeId,
-      //       present: entry.present,
-      //       notes: entry.notes || null,
-      //       recorded_by: 'user-1',
-      //     })),
-      //     { onConflict: 'student_id,date' }
-      //   )
+    const hasExisting = records.some(r => r.date === date)
 
-      // if (insertError) throw insertError
-
-      // Mock implementation
-      await new Promise(resolve => setTimeout(resolve, 500))
-
-      // Check for duplicates
-      const existingDates = records
-        .filter(r => r.date === date)
-        .map(r => r.student_id)
-
-      const hasExisting = entries.some(e => existingDates.includes(e.student_id))
-
+    if (isTourMode) {
       const newRecords: AttendanceRecord[] = entries.map(entry => ({
-        id: Date.now().toString() + entry.student_id,
+        id: `mock-att-${Date.now()}-${entry.student_id}`,
         date,
         student_id: entry.student_id,
         grade_id: gradeId,
         present: entry.present,
         notes: entry.notes || null,
-        recorded_by: 'user-1',
+        recorded_by: 'mock-user-1',
         created_at: new Date().toISOString(),
       }))
+      setRecords(prev => [...prev.filter(r => r.date !== date), ...newRecords])
+      return { error: null, replaced: hasExisting }
+    }
 
-      // Replace existing records for this date, add new ones
-      setRecords(prev => {
-        const otherDates = prev.filter(r => r.date !== date)
-        return [...otherDates, ...newRecords]
-      })
+    try {
+      const { error: upsertError } = await supabase
+        .from(TABLES.ATTENDANCE)
+        .upsert(
+          entries.map(entry => ({
+            date,
+            student_id: entry.student_id,
+            grade_id: gradeId,
+            present: entry.present,
+            notes: entry.notes || null,
+            recorded_by: profile?.id ?? null,
+          })),
+          { onConflict: 'student_id,date' }
+        )
 
+      if (upsertError) throw upsertError
+
+      await fetchAttendance()
       return { error: null, replaced: hasExisting }
     } catch (err: any) {
       return { error: err.message, replaced: false }

@@ -84,7 +84,7 @@ export default function AttendanceHistoryView({
             {dateRecords.map(record => (
               <View key={record.id} style={styles.recordRow}>
                 <View style={[styles.statusDot, record.present ? styles.presentDot : styles.absentDot]} />
-                <Text style={styles.recordName}>{getStudentName(record.student_id)}</Text>
+                <Text style={styles.recordName}>{getStudentName(record.student_id ?? '')}</Text>
                 <Text style={[styles.recordStatus, record.present ? styles.presentLabel : styles.absentLabel]}>
                   {record.present ? 'Present' : 'Absent'}
                 </Text>
