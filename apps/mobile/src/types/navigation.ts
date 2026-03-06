@@ -26,6 +26,7 @@ export type DashboardStackParamList = {
 
 export type GradesStackParamList = {
   MyGrades: undefined
+  Onboarding: undefined
   GradeDetail: { gradeId: string; gradeName: string }
   AddStudent: { gradeId: string; gradeName: string }
   EditStudent: { gradeId: string; gradeName: string; student: Student }

@@ -32,6 +32,7 @@ import RegisterScreen from '../screens/auth/RegisterScreen'
 // Servant screens
 import DashboardScreen from '../screens/servant/DashboardScreen'
 import MyGradesScreen from '../screens/servant/MyGradesScreen'
+import OnboardingScreen from '../screens/servant/OnboardingScreen'
 import GradeDetailScreen from '../screens/servant/GradeDetailScreen'
 import AddStudentScreen from '../screens/servant/AddStudentScreen'
 import EditStudentScreen from '../screens/servant/EditStudentScreen'
@@ -124,6 +125,16 @@ function GradesStackNavigator() {
             onGradePress={(gradeId, gradeName) =>
               navigation.navigate('GradeDetail', { gradeId, gradeName })
             }
+            onStartOnboarding={() => navigation.navigate('Onboarding')}
+          />
+        )}
+      </GradesStack.Screen>
+
+      <GradesStack.Screen name="Onboarding">
+        {({ navigation }) => (
+          <OnboardingScreen
+            onComplete={() => navigation.replace('MyGrades')}
+            onSkip={() => navigation.goBack()}
           />
         )}
       </GradesStack.Screen>

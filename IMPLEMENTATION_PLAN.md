@@ -154,7 +154,27 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 
 ---
 
-## Phase 7: Coordinator Flow (UI → then wire to Supabase)
+## Phase 7: UI Component System
+
+> Replace per-screen `createStyles` boilerplate with shared primitive components that consume theme tokens internally. Goal: reduce style code per screen by ~60–70%, make dark mode changes require zero per-screen edits, and reduce Claude Code token usage on future edits.
+
+- [ ] **UI.1**: Build primitive components in `src/components/ui/`
+  - `Screen` — wraps SafeArea + background color
+  - `Card` — rounded card with border and shadow, consumes `colors.card`
+  - `Button` — primary/secondary/ghost variants, loading state, consumes theme
+  - `Label` — heading variants (h1/h2/h3), consumes `colors.textPrimary`
+  - `BodyText` — body/secondary/caption variants, `secondary` prop for `colors.textSecondary`
+  - `Row` — horizontal flex with gap and alignment props
+  - `Divider` — themed horizontal rule
+  - `Badge` — colored pill (for class type tags, attendance %, etc.)
+  - `EmptyState` — icon + title + body + optional CTA button
+  - `ErrorState` — icon + title + body + retry button
+- [ ] **UI.2**: Refactor 2–3 existing screens as proof of concept (OnboardingScreen, MyGradesScreen, GradeDetailScreen)
+- [ ] **UI.3**: Apply primitives to all new screens going forward; refactor remaining screens opportunistically
+
+---
+
+## Phase 8: Coordinator Flow (UI → then wire to Supabase)
 
 ### Dashboard
 - [ ] **C.1**: CoordinatorDashboardScreen — total students, classes, attendance rate, staffing gaps
@@ -256,13 +276,14 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 | 1. Foundation | Done |
 | 2. Servant Core UI | Done |
 | 3. Servant Dashboard & Features | Done |
-| 4. Supabase Integration | Up Next |
+| 4. Supabase Integration | In Progress |
 | 5. Privacy & Legal | Not Started |
 | 6. Dark Mode | Not Started |
-| 7. Coordinator Flow | Not Started |
-| 8. Calendar Views | Not Started |
-| 9. Local Testing | Blocked on Phase 4 |
-| 10. Beta & Production | Blocked on Phase 9 |
+| 7. UI Component System | Not Started |
+| 8. Coordinator Flow | Not Started |
+| 9. Calendar Views | Not Started |
+| 10. Local Testing | Blocked on Phase 4 |
+| 11. Beta & Production | Blocked on Phase 10 |
 
 ---
 
