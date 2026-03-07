@@ -155,12 +155,34 @@ export function useGrades() {
     }
 
     try {
-      const { error: deleteError } = await supabase
-        .from(TABLES.GRADES)
-        .delete()
-        .eq('id', gradeId)
+      // Find all classes linked to this grade
+      const { data: classGrades, error: cgError } = await supabase
+        .from(TABLES.CLASS_GRADES)
+        .select('class_id')
+        .eq('grade_id', gradeId)
+      if (cgError) throw cgError
 
-      if (deleteError) throw deleteError
+      const classIds = (classGrades ?? []).map((r: any) => r.class_id as string)
+
+      // Remove servant from those classes so their sessions no longer appear on dashboard
+      if (classIds.length > 0 && profile) {
+        const { error: csError } = await supabase
+          .from(TABLES.CLASS_SERVANTS)
+          .delete()
+          .eq('servant_id', profile.id)
+          .in('class_id', classIds)
+        if (csError) throw csError
+      }
+
+      // Unlink servant from the grade (don't delete the grade itself — other servants use it)
+      if (profile) {
+        const { error: sgError } = await supabase
+          .from(TABLES.SERVANT_GRADES)
+          .delete()
+          .eq('servant_id', profile.id)
+          .eq('grade_id', gradeId)
+        if (sgError) throw sgError
+      }
 
       setGrades(prev => prev.filter(g => g.id !== gradeId))
       return { error: null }

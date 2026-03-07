@@ -1,12 +1,14 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Linking,
   Platform,
+  Alert,
 } from 'react-native'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { Session } from '../../hooks/useSessions'
@@ -27,17 +29,25 @@ interface SessionDetailScreenProps {
   session: Session
   onBack: () => void
   onTakeAttendance?: (gradeId: string, gradeName: string) => void
+  onCancelSession?: (sessionId: string, reason: string) => Promise<{ error: string | null }>
+  onUpdateLessonTopic?: (sessionId: string, topic: string) => Promise<{ error: string | null }>
 }
 
 export default function SessionDetailScreen({
   session,
   onBack,
   onTakeAttendance,
+  onCancelSession,
+  onUpdateLessonTopic,
 }: SessionDetailScreenProps) {
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
   const { getClassById, getServantById, getServantsByClassId } = useClasses()
   const { isServantAvailable } = useAvailability()
+
+  const [editingTopic, setEditingTopic] = useState(false)
+  const [topicDraft, setTopicDraft] = useState(session.lessonTopic)
+  const [savingTopic, setSavingTopic] = useState(false)
 
   const classTypeColors = getClassTypeColors(colors)
 
@@ -61,7 +71,7 @@ export default function SessionDetailScreen({
   const isCompleted = session.status === 'completed'
   const isTeaching = session.lessonServantId === CURRENT_USER.id
 
-  const TODAY = '2026-02-23'
+  const TODAY = new Date().toISOString().split('T')[0]
   const canTakeAttendance =
     onTakeAttendance &&
     cls &&
@@ -82,13 +92,44 @@ export default function SessionDetailScreen({
 
   function handleTakeAttendance() {
     if (!cls || !onTakeAttendance) return
-    // Use the first grade for this class
     const gradeId = cls.gradeIds[0]
     const gradeNames: Record<string, string> = {
       'grade-5': '5th Grade',
       'grade-6': '6th Grade',
     }
     onTakeAttendance(gradeId, gradeNames[gradeId] || gradeId)
+  }
+
+  function handleCancelSession() {
+    if (!onCancelSession) return
+    Alert.prompt(
+      'Cancel Session',
+      'Reason for cancellation (optional):',
+      [
+        { text: 'Never mind', style: 'cancel' },
+        {
+          text: 'Cancel Session',
+          style: 'destructive',
+          onPress: async (reason: string | undefined) => {
+            const { error } = await onCancelSession(session.id, reason ?? '')
+            if (error) Alert.alert('Error', error)
+          },
+        },
+      ],
+      'plain-text',
+    )
+  }
+
+  async function handleSaveTopic() {
+    if (!onUpdateLessonTopic) return
+    setSavingTopic(true)
+    const { error } = await onUpdateLessonTopic(session.id, topicDraft)
+    setSavingTopic(false)
+    if (error) {
+      Alert.alert('Error', error)
+    } else {
+      setEditingTopic(false)
+    }
   }
 
   return (
@@ -98,7 +139,35 @@ export default function SessionDetailScreen({
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Text style={styles.backButtonText}>{'\u2039'} Dashboard</Text>
         </TouchableOpacity>
-        <Text style={styles.title} numberOfLines={3}>{session.lessonTopic}</Text>
+        {editingTopic ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+            <TextInput
+              style={[styles.title, { flex: 1, borderBottomWidth: 1, borderBottomColor: colors.primary, paddingVertical: 2 }]}
+              value={topicDraft}
+              onChangeText={setTopicDraft}
+              autoFocus
+              multiline
+              returnKeyType="done"
+              blurOnSubmit
+              onSubmitEditing={handleSaveTopic}
+            />
+            <TouchableOpacity onPress={handleSaveTopic} disabled={savingTopic} style={{ paddingHorizontal: 8, paddingVertical: 4 }}>
+              <Text style={{ color: colors.primary, fontWeight: '700', fontSize: 15 }}>
+                {savingTopic ? '…' : 'Save'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { setEditingTopic(false); setTopicDraft(session.lessonTopic) }} style={{ paddingHorizontal: 4 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 15 }}>✕</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity onPress={() => !isCanceled && setEditingTopic(true)} activeOpacity={isCanceled ? 1 : 0.7}>
+            <Text style={styles.title} numberOfLines={3}>{session.lessonTopic || 'TBD'}</Text>
+            {!isCanceled && (
+              <Text style={{ fontSize: 11, color: colors.primary, marginTop: 2 }}>Tap to edit topic</Text>
+            )}
+          </TouchableOpacity>
+        )}
         <View style={styles.subtitleRow}>
           {cls && <Text style={styles.subtitle}>{cls.name}</Text>}
           {classTypeName ? (
@@ -258,6 +327,13 @@ export default function SessionDetailScreen({
         {canTakeAttendance && (
           <TouchableOpacity style={styles.attendanceButton} onPress={handleTakeAttendance}>
             <Text style={styles.attendanceButtonText}>Take Attendance</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Cancel session */}
+        {!isCanceled && !isCompleted && onCancelSession && (
+          <TouchableOpacity style={styles.cancelButton} onPress={handleCancelSession}>
+            <Text style={styles.cancelButtonText}>Cancel This Session</Text>
           </TouchableOpacity>
         )}
 
@@ -546,6 +622,21 @@ const createStyles = (colors: ThemeColors) => ({
   attendanceButtonText: {
     color: colors.primaryText,
     fontSize: 16,
+    fontWeight: '600' as const,
+  },
+
+  // Cancel session button
+  cancelButton: {
+    borderRadius: 10,
+    padding: 16,
+    alignItems: 'center' as const,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: colors.error,
+  },
+  cancelButtonText: {
+    color: colors.error,
+    fontSize: 15,
     fontWeight: '600' as const,
   },
 })

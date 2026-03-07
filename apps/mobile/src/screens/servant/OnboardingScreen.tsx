@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import {
   View,
   Text,
+  TextInput,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
@@ -10,6 +11,8 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
+import DateTimePicker from '@react-native-community/datetimepicker'
+import { format } from 'date-fns'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { supabase } from '../../lib/supabase'
 import { TABLES } from '../../lib/tables'
@@ -28,6 +31,12 @@ interface ClassDefinition {
   name: string
   classTypeName: string
   gradeIds: string[]  // which of the entered grades participate (temp local ids)
+  // Schedule fields
+  dayOfWeek: number | null  // 0=Sun … 6=Sat
+  startTime: string  // 'HH:MM'
+  endTime: string    // 'HH:MM'
+  location: string   // 'Church' | 'Rotating (Parent Home)' | 'TBD' | 'Other'
+  // Start/end date are shared across all classes — stored top-level in component state
 }
 
 interface OnboardingScreenProps {
@@ -59,6 +68,48 @@ const CLASS_TYPE_OPTIONS = [
   'FNA',
   'Bible Study',
 ]
+
+const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+const LOCATION_OPTIONS = ['Church', 'Rotating (Parent Home)', 'TBD', 'Other']
+
+// ─── Session generation ────────────────────────────────────────────────────────
+
+function buildSessionRows(
+  cls: ClassDefinition,
+  classId: string,
+  createdBy: string,
+  startDate: string,
+  endDate: string,
+) {
+  if (cls.dayOfWeek === null || !startDate || !endDate) return []
+
+  const rows = []
+  const end = new Date(endDate + 'T12:00:00')
+  let current = new Date(startDate + 'T12:00:00')
+
+  // Advance to the first occurrence of the target day
+  while (current.getDay() !== cls.dayOfWeek) {
+    current.setDate(current.getDate() + 1)
+  }
+
+  while (current <= end) {
+    const dateStr = current.toISOString().split('T')[0]
+    rows.push({
+      class_id: classId,
+      date: dateStr,
+      start_time: cls.startTime || null,
+      end_time: cls.endTime || null,
+      location_name: cls.location !== 'TBD' && cls.location !== 'Other' ? cls.location : null,
+      lesson_topic: 'TBD',
+      status: 'scheduled',
+      created_by: createdBy,
+    })
+    current.setDate(current.getDate() + 7)
+  }
+
+  return rows
+}
 
 // ─── Step indicator ───────────────────────────────────────────────────────────
 
@@ -169,6 +220,14 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
   // Set after save completes — used by step 4 (import students)
   const [savedGradeIds, setSavedGradeIds] = useState<{ id: string; name: string }[]>([])
 
+  // Shared date range for all classes
+  const [scheduleStartDate, setScheduleStartDate] = useState(new Date().toISOString().split('T')[0])
+  const [scheduleEndDate, setScheduleEndDate] = useState('')
+
+  // Date/time picker state
+  const [activeDatePicker, setActiveDatePicker] = useState<'startDate' | 'endDate' | null>(null)
+  const [activeTimePicker, setActiveTimePicker] = useState<{ classId: string; field: 'startTime' | 'endTime' } | null>(null)
+
   const isMultiGrade = grades.length > 1
 
   // ── Step 1 ──────────────────────────────────────────────────────────────────
@@ -207,6 +266,28 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
 
   // ── Step 2 ──────────────────────────────────────────────────────────────────
 
+  const DEFAULT_DAY_OF_WEEK: Record<string, number> = {
+    'Sunday School': 0,
+    'FNA': 5,
+  }
+
+  function makeClassDef(classTypeName: string, gradeIds: string[]): ClassDefinition {
+    return {
+      id: `c${Date.now()}`,
+      name: classTypeName,
+      classTypeName,
+      gradeIds,
+      dayOfWeek: DEFAULT_DAY_OF_WEEK[classTypeName] ?? null,
+      startTime: '',
+      endTime: '',
+      location: 'TBD',
+    }
+  }
+
+  function updateClassField<K extends keyof ClassDefinition>(classId: string, field: K, value: ClassDefinition[K]) {
+    setClasses(prev => prev.map(c => c.id === classId ? { ...c, [field]: value } : c))
+  }
+
   // Single-grade: toggle the class type on/off for the only grade
   function toggleClassSingleGrade(classTypeName: string) {
     const gradeId = grades[0].id
@@ -215,13 +296,7 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
       setClasses(prev => prev.filter(c => c.id !== existing.id))
       setMyClassIds(prev => { const n = new Set(prev); n.delete(existing.id); return n })
     } else {
-      const newClass: ClassDefinition = {
-        id: `c${Date.now()}`,
-        name: classTypeName,
-        classTypeName,
-        gradeIds: [gradeId],
-      }
-      setClasses(prev => [...prev, newClass])
+      setClasses(prev => [...prev, makeClassDef(classTypeName, [gradeId])])
     }
   }
 
@@ -246,12 +321,7 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
         setClasses(prev => prev.map(c => c.id === existing.id ? { ...c, gradeIds: [...c.gradeIds, gradeId] } : c))
       }
     } else {
-      setClasses(prev => [...prev, {
-        id: `c${Date.now()}`,
-        name: classTypeName,
-        classTypeName,
-        gradeIds: [gradeId],
-      }])
+      setClasses(prev => [...prev, makeClassDef(classTypeName, [gradeId])])
     }
   }
 
@@ -262,8 +332,6 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
   function step2Valid() {
     return classes.length > 0
   }
-
-  // ── Step 3 ──────────────────────────────────────────────────────────────────
 
   function toggleMyClass(classId: string) {
     setMyClassIds(prev => {
@@ -312,7 +380,15 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
 
         const { data: classRow, error: classError } = await supabase
           .from(TABLES.CLASSES)
-          .insert({ name: cls.name, class_type_id: classTypeId, created_by: profile.id })
+          .insert({
+            name: cls.name,
+            class_type_id: classTypeId,
+            created_by: profile.id,
+            day_of_week: cls.dayOfWeek,
+            start_time: cls.startTime || null,
+            end_time: cls.endTime || null,
+            default_location: cls.location !== 'TBD' ? cls.location : null,
+          })
           .select()
           .single()
         if (classError) throw classError
@@ -329,6 +405,14 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
           await supabase
             .from(TABLES.CLASS_SERVANTS)
             .insert({ class_id: classRow.id, servant_id: profile.id })
+        }
+
+        // Bulk-insert sessions only for classes the servant personally teaches
+        if (myClassIds.has(cls.id) && cls.dayOfWeek !== null && scheduleStartDate && scheduleEndDate) {
+          const sessionRows = buildSessionRows(cls, classRow.id, profile.id, scheduleStartDate, scheduleEndDate)
+          if (sessionRows.length > 0) {
+            await supabase.from(TABLES.SESSIONS).insert(sessionRows)
+          }
         }
       }
 
@@ -384,96 +468,298 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
     )
   }
 
+  function formatDateDisplay(dateStr: string): string {
+    if (!dateStr) return 'Select date'
+    return format(new Date(dateStr + 'T12:00:00'), 'MMMM do, yyyy')
+  }
+
+  function formatTimeDisplay(time: string): string {
+    if (!time) return 'Set time'
+    const [h, m] = time.split(':').map(Number)
+    const period = h >= 12 ? 'PM' : 'AM'
+    const hour = h % 12 || 12
+    return m === 0 ? `${hour} ${period}` : `${hour}:${m.toString().padStart(2, '0')} ${period}`
+  }
+
   function renderStep2() {
     return (
       <>
         <Text style={styles.stepTitle}>What classes does your grade have?</Text>
         <Text style={styles.stepSubtitle}>
-          Select all classes that exist for your grade(s), including combined ones.{'\n\n'}
+          Select all classes that exist for your grade(s). For the ones you personally teach, fill in the schedule so your dashboard is populated automatically.{'\n\n'}
           <Text style={styles.stepExample}>
-            Example at a large church: Sunday School, Small Group, and FNA — even if FNA includes 5th graders from another servant's roster.{'\n\n'}
-            Example at a small church (covering 5th + 6th): you might select Sunday School for both grades — tap each grade chip to include it.{'\n\n'}
-            Combined classes shared with other servants (like FNA) will be merged automatically when they set up their grade.
+            Combined classes (like FNA) will be merged when other servants set up their grades.
           </Text>
         </Text>
 
-        {CLASS_TYPE_OPTIONS.map(classTypeName => (
-          <View key={classTypeName} style={styles.classTypeSection}>
-            <Text style={styles.classTypeLabel}>{classTypeName}</Text>
-
-            {isMultiGrade ? (
-              // Multi-grade: show a chip per grade
-              <View style={styles.gradeChips}>
-                {grades.map(grade => {
-                  const checked = isGradeInClass(classTypeName, grade.id)
-                  return (
-                    <TouchableOpacity
-                      key={grade.id}
-                      style={[styles.chip, checked && styles.chipSelected]}
-                      onPress={() => toggleClassMultiGrade(classTypeName, grade.id)}
-                    >
-                      <Text style={[styles.chipText, checked && styles.chipTextSelected]}>
-                        {grade.name || 'Unnamed grade'}
-                      </Text>
-                    </TouchableOpacity>
-                  )
-                })}
-              </View>
-            ) : (
-              // Single-grade: just one on/off toggle for the class type
+        {/* Shared date range */}
+        <View style={styles.sharedDateSection}>
+          <Text style={styles.scheduleFieldLabel}>Schedule Date Range (applies to all classes)</Text>
+          <View style={styles.timeRow}>
+            <View style={styles.timeField}>
+              <Text style={styles.scheduleFieldLabel}>From</Text>
               <TouchableOpacity
-                style={[styles.chip, isClassTypeToggled(classTypeName) && styles.chipSelected]}
-                onPress={() => toggleClassSingleGrade(classTypeName)}
+                style={styles.dateButton}
+                onPress={() => setActiveDatePicker('startDate')}
               >
-                <Text style={[styles.chipText, isClassTypeToggled(classTypeName) && styles.chipTextSelected]}>
-                  {isClassTypeToggled(classTypeName) ? 'Yes' : 'No'}
+                <Text style={[styles.dateButtonText, !scheduleStartDate && { color: colors.textMuted }]}>
+                  {formatDateDisplay(scheduleStartDate)}
                 </Text>
               </TouchableOpacity>
-            )}
+            </View>
+            <View style={styles.timeField}>
+              <Text style={styles.scheduleFieldLabel}>To</Text>
+              <TouchableOpacity
+                style={styles.dateButton}
+                onPress={() => setActiveDatePicker('endDate')}
+              >
+                <Text style={[styles.dateButtonText, !scheduleEndDate && { color: colors.textMuted }]}>
+                  {formatDateDisplay(scheduleEndDate)}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        ))}
+        </View>
+
+        {CLASS_TYPE_OPTIONS.map(classTypeName => {
+          const cls = classes.find(c => c.classTypeName === classTypeName)
+          const toggled = !!cls
+          const isMyClass = toggled && cls && myClassIds.has(cls.id)
+
+          return (
+            <View key={classTypeName} style={styles.classTypeSection}>
+              {/* Row 1: Does your grade have this class? */}
+              <View style={styles.classTypeToggleRow}>
+                <Text style={styles.classTypeLabel}>{classTypeName}</Text>
+                {isMultiGrade ? (
+                  <View style={styles.gradeChips}>
+                    {grades.map(grade => {
+                      const checked = isGradeInClass(classTypeName, grade.id)
+                      return (
+                        <TouchableOpacity
+                          key={grade.id}
+                          style={[styles.chip, checked && styles.chipSelected]}
+                          onPress={() => toggleClassMultiGrade(classTypeName, grade.id)}
+                        >
+                          <Text style={[styles.chipText, checked && styles.chipTextSelected]}>
+                            {grade.name || 'Unnamed grade'}
+                          </Text>
+                        </TouchableOpacity>
+                      )
+                    })}
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={[styles.chip, toggled && styles.chipSelected]}
+                    onPress={() => toggleClassSingleGrade(classTypeName)}
+                  >
+                    <Text style={[styles.chipText, toggled && styles.chipTextSelected]}>
+                      {toggled ? 'Yes' : 'No'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Row 2: Do you personally teach it? (only shown when toggled on) */}
+              {toggled && cls && (
+                <View style={styles.teachToggleRow}>
+                  <Text style={styles.teachToggleLabel}>Do you personally teach this?</Text>
+                  <View style={styles.gradeChips}>
+                    {['Yes', 'No'].map(opt => {
+                      const selected = opt === 'Yes' ? myClassIds.has(cls.id) : !myClassIds.has(cls.id)
+                      return (
+                        <TouchableOpacity
+                          key={opt}
+                          style={[styles.chip, selected && styles.chipSelected]}
+                          onPress={() => {
+                            if (opt === 'Yes' && !myClassIds.has(cls.id)) toggleMyClass(cls.id)
+                            if (opt === 'No' && myClassIds.has(cls.id)) toggleMyClass(cls.id)
+                          }}
+                        >
+                          <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{opt}</Text>
+                        </TouchableOpacity>
+                      )
+                    })}
+                  </View>
+                </View>
+              )}
+
+              {/* Schedule card — only when toggled on AND servant teaches it */}
+              {isMyClass && cls && (
+                <View style={styles.scheduleCard}>
+                  {/* Day of week */}
+                  <Text style={styles.scheduleFieldLabel}>Day of Week</Text>
+                  <View style={styles.dayChips}>
+                    {DAYS_OF_WEEK.map((day, i) => (
+                      <TouchableOpacity
+                        key={day}
+                        style={[styles.dayChip, cls.dayOfWeek === i && styles.chipSelected]}
+                        onPress={() => updateClassField(cls.id, 'dayOfWeek', i)}
+                      >
+                        <Text style={[styles.dayChipText, cls.dayOfWeek === i && styles.chipTextSelected]}>
+                          {day.slice(0, 3)}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  {/* Start / End time */}
+                  <View style={styles.timeRow}>
+                    <View style={styles.timeField}>
+                      <Text style={styles.scheduleFieldLabel}>Start Time</Text>
+                      <TouchableOpacity
+                        style={styles.dateButton}
+                        onPress={() => setActiveTimePicker({ classId: cls.id, field: 'startTime' })}
+                      >
+                        <Text style={[styles.dateButtonText, !cls.startTime && { color: colors.textMuted }]}>
+                          {formatTimeDisplay(cls.startTime)}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={styles.timeField}>
+                      <Text style={styles.scheduleFieldLabel}>End Time</Text>
+                      <TouchableOpacity
+                        style={styles.dateButton}
+                        onPress={() => setActiveTimePicker({ classId: cls.id, field: 'endTime' })}
+                      >
+                        <Text style={[styles.dateButtonText, !cls.endTime && { color: colors.textMuted }]}>
+                          {formatTimeDisplay(cls.endTime)}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {/* Location */}
+                  <Text style={styles.scheduleFieldLabel}>Default Location</Text>
+                  <View style={styles.locationChips}>
+                    {LOCATION_OPTIONS.map(loc => (
+                      <TouchableOpacity
+                        key={loc}
+                        style={[styles.chip, cls.location === loc && styles.chipSelected]}
+                        onPress={() => updateClassField(cls.id, 'location', loc)}
+                      >
+                        <Text style={[styles.chipText, cls.location === loc && styles.chipTextSelected]}>
+                          {loc}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+            </View>
+          )
+        })}
+
+        {/* Date picker modal */}
+        {activeDatePicker && (
+          <Modal visible transparent animationType="fade" onRequestClose={() => setActiveDatePicker(null)}>
+            <TouchableOpacity
+              style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
+              activeOpacity={1}
+              onPress={() => setActiveDatePicker(null)}
+            >
+              <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16, paddingBottom: 40 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>
+                    {activeDatePicker === 'startDate' ? 'Start Date' : 'End Date'}
+                  </Text>
+                  <TouchableOpacity onPress={() => setActiveDatePicker(null)}>
+                    <Text style={{ fontSize: 16, color: colors.primary, fontWeight: '600' }}>Done</Text>
+                  </TouchableOpacity>
+                </View>
+                <DateTimePicker
+                  value={(() => {
+                    const val = activeDatePicker === 'startDate' ? scheduleStartDate : scheduleEndDate
+                    return val ? new Date(val + 'T12:00:00') : new Date()
+                  })()}
+                  mode="date"
+                  display="spinner"
+                  onChange={(_, selected) => {
+                    if (selected) {
+                      const str = selected.toISOString().split('T')[0]
+                      if (activeDatePicker === 'startDate') setScheduleStartDate(str)
+                      else setScheduleEndDate(str)
+                    }
+                  }}
+                  textColor={colors.textPrimary}
+                />
+              </View>
+            </TouchableOpacity>
+          </Modal>
+        )}
+
+        {/* Time picker modal */}
+        {activeTimePicker && (() => {
+          const cls = classes.find(c => c.id === activeTimePicker.classId)
+          if (!cls) return null
+          const currentVal = cls[activeTimePicker.field]
+          const date = currentVal
+            ? (() => { const d = new Date(); const [h, m] = currentVal.split(':').map(Number); d.setHours(h, m, 0, 0); return d })()
+            : new Date()
+          return (
+            <Modal visible transparent animationType="fade" onRequestClose={() => setActiveTimePicker(null)}>
+              <TouchableOpacity
+                style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
+                activeOpacity={1}
+                onPress={() => setActiveTimePicker(null)}
+              >
+                <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16, paddingBottom: 40 }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>
+                      {activeTimePicker.field === 'startTime' ? 'Start Time' : 'End Time'}
+                    </Text>
+                    <TouchableOpacity onPress={() => setActiveTimePicker(null)}>
+                      <Text style={{ fontSize: 16, color: colors.primary, fontWeight: '600' }}>Done</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <DateTimePicker
+                    value={date}
+                    mode="time"
+                    display="spinner"
+                    onChange={(_, selected) => {
+                      if (selected) {
+                        const h = selected.getHours().toString().padStart(2, '0')
+                        const m = selected.getMinutes().toString().padStart(2, '0')
+                        updateClassField(activeTimePicker.classId, activeTimePicker.field, `${h}:${m}`)
+                      }
+                    }}
+                    textColor={colors.textPrimary}
+                  />
+                </View>
+              </TouchableOpacity>
+            </Modal>
+          )
+        })()}
       </>
     )
   }
 
-  function renderStep3() {
+
+  // ── Step 3 (post-save): Confirmation ─────────────────────────────────────────
+
+  function renderConfirmation() {
+    const sessionCount = classes
+      .filter(c => myClassIds.has(c.id) && c.dayOfWeek !== null && scheduleStartDate && scheduleEndDate)
+      .reduce((total, cls) => total + buildSessionRows(cls, '', '', scheduleStartDate, scheduleEndDate).length, 0)
+
     return (
-      <>
-        <Text style={styles.stepTitle}>Which classes do YOU personally serve?</Text>
-        <Text style={styles.stepSubtitle}>
-          Select only the classes you actually teach or help with. Other servants can be added to a class later.{'\n\n'}
-          <Text style={styles.stepExample}>
-            Example: you serve Sunday School and FNA, but not Small Group — only check those two.
-          </Text>
+      <View style={styles.confirmationContainer}>
+        <Text style={styles.confirmationIcon}>🎉</Text>
+        <Text style={styles.confirmationTitle}>You're all set!</Text>
+        <Text style={styles.confirmationText}>
+          Your grades and classes have been created.
+          {sessionCount > 0 ? ` ${sessionCount} sessions have been automatically scheduled on your dashboard.` : ''}
         </Text>
 
-        {classes.map(cls => {
-          const selected = myClassIds.has(cls.id)
-          const gradeNames = cls.gradeIds
-            .map(lid => grades.find(g => g.id === lid)?.name ?? '')
-            .filter(Boolean)
-            .join(', ')
-          return (
-            <TouchableOpacity
-              key={cls.id}
-              style={[styles.classCard, selected && styles.classCardSelected]}
-              onPress={() => toggleMyClass(cls.id)}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.classCardTitle, selected && styles.classCardTitleSelected]}>
-                  {cls.classTypeName}
-                </Text>
-                {isMultiGrade && (
-                  <Text style={styles.classCardSubtitle}>{gradeNames}</Text>
-                )}
-              </View>
-              <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
-                {selected && <Text style={styles.checkmark}>✓</Text>}
-              </View>
-            </TouchableOpacity>
-          )
-        })}
-      </>
+        <TouchableOpacity style={styles.confirmationPrimaryButton} onPress={() => setStep(4)}>
+          <Text style={styles.confirmationPrimaryButtonText}>Add Students (optional) →</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.confirmationSecondaryButton} onPress={onComplete}>
+          <Text style={styles.confirmationSecondaryButtonText}>Go to Dashboard</Text>
+        </TouchableOpacity>
+      </View>
     )
   }
 
@@ -535,25 +821,36 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
     setStep(s => s + 1)
   }
 
-  const stepContent = [renderStep1, renderStep2, renderStep3, renderStep4]
-  const isLastStep = step === stepContent.length - 1
+  // Step 1 is the last wizard step — "Save" triggers save
+  const isLastWizardStep = step === 1
+
+  // Steps 0-1 = wizard, 2 = confirmation, 3 = import students
+  const stepContent = [renderStep1, renderStep2, renderConfirmation, renderStep4]
+  const showStepIndicator = step <= 1
+  const showFooter = step <= 1
+  // Skip only shown on import step (3) — all wizard steps are required
+  const showSkip = step === 3
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Set Up Your Ministry</Text>
-          <TouchableOpacity onPress={onSkip}>
-            <Text style={styles.skipText}>Skip</Text>
-          </TouchableOpacity>
+          {showSkip ? (
+            <TouchableOpacity onPress={onComplete}>
+              <Text style={styles.skipText}>Skip</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 40 }} />
+          )}
         </View>
 
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <StepIndicator current={step} total={stepContent.length} />
+          {showStepIndicator && <StepIndicator current={step} total={2} />}
           {stepContent[step]()}
         </ScrollView>
 
-        {step < 3 && (
+        {showFooter && (
           <View style={styles.footer}>
             {step > 0 && (
               <TouchableOpacity style={styles.backButton} onPress={() => setStep(s => s - 1)} disabled={saving}>
@@ -562,12 +859,12 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
             )}
             <TouchableOpacity
               style={[styles.nextButton, saving && { opacity: 0.6 }]}
-              onPress={step === 2 ? handleFinish : handleNext}
+              onPress={isLastWizardStep ? handleFinish : handleNext}
               disabled={saving}
             >
               {saving
                 ? <ActivityIndicator color={colors.primaryText} />
-                : <Text style={styles.nextButtonText}>{step === 2 ? 'Save & Continue →' : 'Next →'}</Text>
+                : <Text style={styles.nextButtonText}>{isLastWizardStep ? 'Save & Continue →' : 'Next →'}</Text>
               }
             </TouchableOpacity>
           </View>
@@ -659,18 +956,124 @@ const createStyles = (colors: ThemeColors) => ({
     fontWeight: '500' as const,
   },
   classTypeSection: {
-    marginBottom: 24,
+    marginBottom: 20,
+  },
+  classTypeToggleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    marginBottom: 8,
   },
   classTypeLabel: {
     fontSize: 16,
     fontWeight: '600' as const,
     color: colors.textPrimary,
+  },
+  teachToggleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+    backgroundColor: colors.inputBackground,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     marginBottom: 10,
+  },
+  teachToggleLabel: {
+    fontSize: 14,
+    fontWeight: '500' as const,
+    color: colors.textPrimary,
+    flex: 1,
+    marginRight: 12,
   },
   gradeChips: {
     flexDirection: 'row' as const,
     flexWrap: 'wrap' as const,
     gap: 8,
+  },
+  sharedDateSection: {
+    backgroundColor: colors.inputBackground,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+    marginBottom: 20,
+    gap: 8,
+  },
+  scheduleCard: {
+    backgroundColor: colors.inputBackground,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 14,
+    gap: 12,
+    marginTop: 4,
+  },
+  scheduleSkipHint: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontStyle: 'italic' as const,
+    marginTop: 2,
+    marginBottom: 4,
+  },
+  scheduleFieldLabel: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: colors.textMuted,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.4,
+    marginBottom: 6,
+  },
+  dayChips: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    gap: 6,
+  },
+  dayChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.card,
+  },
+  dayChipText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  timeRow: {
+    flexDirection: 'row' as const,
+    gap: 12,
+  },
+  timeField: {
+    flex: 1,
+  },
+  timeInput: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 15,
+    color: colors.textPrimary,
+  },
+  locationChips: {
+    flexDirection: 'row' as const,
+    flexWrap: 'wrap' as const,
+    gap: 8,
+  },
+  dateButton: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: 10,
+  },
+  dateButtonText: {
+    fontSize: 15,
+    color: colors.textPrimary,
   },
   chip: {
     paddingHorizontal: 16,
@@ -768,5 +1171,57 @@ const createStyles = (colors: ThemeColors) => ({
     fontSize: 16,
     fontWeight: '700' as const,
     color: colors.primaryText,
+  },
+
+  // Confirmation step
+  confirmationContainer: {
+    flex: 1,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    paddingHorizontal: 32,
+    paddingVertical: 40,
+    gap: 16,
+  },
+  confirmationIcon: {
+    fontSize: 72,
+    marginBottom: 8,
+  },
+  confirmationTitle: {
+    fontSize: 26,
+    fontWeight: '700' as const,
+    color: colors.textPrimary,
+    textAlign: 'center' as const,
+  },
+  confirmationText: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  confirmationPrimaryButton: {
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingHorizontal: 28,
+    paddingVertical: 16,
+    alignItems: 'center' as const,
+    width: '100%' as const,
+  },
+  confirmationPrimaryButtonText: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: colors.primaryText,
+  },
+  confirmationSecondaryButton: {
+    borderRadius: 12,
+    paddingHorizontal: 28,
+    paddingVertical: 14,
+    alignItems: 'center' as const,
+    width: '100%' as const,
+  },
+  confirmationSecondaryButtonText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600' as const,
   },
 })

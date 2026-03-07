@@ -43,6 +43,7 @@ import AvailabilityScreen from '../screens/servant/AvailabilityScreen'
 import OutreachScreen from '../screens/servant/OutreachScreen'
 import OutreachDetailScreen from '../screens/servant/OutreachDetailScreen'
 import { useOutreach } from '../hooks/useOutreach'
+import { useSessions } from '../hooks/useSessions'
 
 // Coordinator screens
 import CoordinatorDashboardScreen from '../screens/coordinator/CoordinatorDashboardScreen'
@@ -91,15 +92,20 @@ function DashboardStackNavigator() {
       </DashboardStack.Screen>
 
       <DashboardStack.Screen name="SessionDetail">
-        {({ navigation, route }) => (
-          <SessionDetailScreen
-            session={route.params.session}
-            onBack={() => navigation.goBack()}
-            onTakeAttendance={(gradeId, gradeName) =>
-              navigation.navigate('TakeAttendance', { gradeId, gradeName })
-            }
-          />
-        )}
+        {({ navigation, route }) => {
+          const { cancelSession, updateLessonTopic } = useSessions(route.params.session.classId)
+          return (
+            <SessionDetailScreen
+              session={route.params.session}
+              onBack={() => navigation.goBack()}
+              onTakeAttendance={(gradeId, gradeName) =>
+                navigation.navigate('TakeAttendance', { gradeId, gradeName })
+              }
+              onCancelSession={cancelSession}
+              onUpdateLessonTopic={updateLessonTopic}
+            />
+          )
+        }}
       </DashboardStack.Screen>
 
       <DashboardStack.Screen name="TakeAttendance">

@@ -9,7 +9,7 @@ import {
   RefreshControl,
 } from 'react-native'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
-import { useGrades } from '../../hooks/useGrades'
+import { useGrades, GradeWithStats } from '../../hooks/useGrades'
 import { GradeCard } from '../../components/GradeCard'
 
 interface MyGradesScreenProps {
@@ -21,7 +21,7 @@ interface MyGradesScreenProps {
 export default function MyGradesScreen({ onGradePress, onBack, onStartOnboarding }: MyGradesScreenProps) {
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
-  const { grades, loading, error, refetch } = useGrades()
+  const { grades, loading, error, refetch, deleteGrade } = useGrades()
 
   const handleGradePress = (gradeId: string, gradeName: string) => {
     if (onGradePress) {
@@ -29,6 +29,24 @@ export default function MyGradesScreen({ onGradePress, onBack, onStartOnboarding
     } else {
       Alert.alert('Navigation', `Would navigate to ${gradeName} detail screen`)
     }
+  }
+
+  const handleDeleteGrade = (grade: GradeWithStats) => {
+    Alert.alert(
+      'Remove Grade',
+      `Remove "${grade.name}" from your ministry? You'll no longer see its sessions on your dashboard. The grade and its students remain in the system for other servants.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await deleteGrade(grade.id)
+            if (error) Alert.alert('Error', error)
+          },
+        },
+      ]
+    )
   }
 
   const renderEmptyState = () => (
@@ -65,10 +83,19 @@ export default function MyGradesScreen({ onGradePress, onBack, onStartOnboarding
             <Text style={styles.backButtonText}>{'\u2039'} Dashboard</Text>
           </TouchableOpacity>
         )}
-        <Text style={styles.title}>My Grades</Text>
-        <Text style={styles.subtitle}>
-          {loading ? 'Loading...' : `${grades.length} grade${grades.length !== 1 ? 's' : ''}`}
-        </Text>
+        <View style={styles.headerRow}>
+          <View>
+            <Text style={styles.title}>My Grades</Text>
+            <Text style={styles.subtitle}>
+              {loading ? 'Loading...' : `${grades.length} grade${grades.length !== 1 ? 's' : ''}`}
+            </Text>
+          </View>
+          {onStartOnboarding && (
+            <TouchableOpacity style={styles.headerSetupButton} onPress={onStartOnboarding}>
+              <Text style={styles.headerSetupButtonText}>+ Set Up Ministry</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {loading && grades.length === 0 ? (
@@ -82,10 +109,21 @@ export default function MyGradesScreen({ onGradePress, onBack, onStartOnboarding
           data={grades}
           keyExtractor={item => item.id}
           renderItem={({ item }) => (
-            <GradeCard
-              grade={item}
-              onPress={() => handleGradePress(item.id, item.name)}
-            />
+            <View style={styles.gradeRow}>
+              <View style={styles.gradeCardWrap}>
+                <GradeCard
+                  grade={item}
+                  onPress={() => handleGradePress(item.id, item.name)}
+                />
+              </View>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => handleDeleteGrade(item)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.deleteIcon}>🗑</Text>
+              </TouchableOpacity>
+            </View>
           )}
           contentContainerStyle={grades.length === 0 ? styles.emptyListContainer : styles.listContainer}
           ListEmptyComponent={renderEmptyState}
@@ -127,8 +165,40 @@ const createStyles = (colors: ThemeColors) => ({
     color: colors.textSecondary,
     marginTop: 4,
   },
+  headerRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+  },
+  headerSetupButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  headerSetupButtonText: {
+    color: colors.primaryText,
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  gradeRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+  },
+  gradeCardWrap: {
+    flex: 1,
+  },
+  deleteButton: {
+    padding: 12,
+    marginLeft: 4,
+  },
+  deleteIcon: {
+    fontSize: 20,
+  },
   listContainer: {
-    padding: 16,
+    paddingVertical: 8,
   },
   emptyListContainer: {
     flex: 1,

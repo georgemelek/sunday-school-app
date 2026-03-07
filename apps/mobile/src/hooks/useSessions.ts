@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTour } from '../contexts/TourContext'
-// import { supabase } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
+import { TABLES } from '../lib/tables'
 
 export interface Session {
   id: string
@@ -17,6 +18,26 @@ export interface Session {
   classAdminId: string | null
   notes: string
   status: 'scheduled' | 'canceled' | 'completed'
+}
+
+// Map DB row → Session interface
+function rowToSession(row: any): Session {
+  return {
+    id: row.id,
+    classId: row.class_id ?? '',
+    date: row.date,
+    startTime: row.start_time ?? '',
+    endTime: row.end_time ?? '',
+    locationName: row.location_name ?? 'TBD',
+    locationAddress: row.location_address ?? '',
+    lessonTopic: row.lesson_topic ?? 'TBD',
+    lessonPage: row.lesson_page ?? '',
+    lessonReference: row.lesson_reference ?? '',
+    lessonServantId: row.lesson_servant_id ?? null,
+    classAdminId: row.class_admin_id ?? null,
+    notes: row.notes ?? '',
+    status: (row.status ?? 'scheduled') as Session['status'],
+  }
 }
 
 // --- Mock session data (from real 6th grade curriculum CSV) ---
@@ -162,45 +183,53 @@ function buildMockSessions(): Session[] {
 
 const ALL_MOCK_SESSIONS = buildMockSessions()
 
-export function useSessions(classId?: string) {
+// classId: single class filter (e.g. from SessionDetail)
+// classIds: multiple class filter (e.g. dashboard — pass servant's class ID list)
+export function useSessions(classId?: string, classIds?: string[]) {
   const { isTourMode } = useTour()
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const classIdsKey = classIds?.join(',')
+
   useEffect(() => {
     fetchSessions()
-  }, [classId, isTourMode])
+  }, [classId, classIdsKey, isTourMode])
 
   async function fetchSessions() {
     setLoading(true)
     setError(null)
 
     try {
-      // TODO: Replace with actual Supabase query
-      // const query = supabase
-      //   .from('sessions')
-      //   .select('*')
-      //   .order('date', { ascending: true })
-      //
-      // if (classId) {
-      //   query.eq('class_id', classId)
-      // }
-      //
-      // const { data, error: fetchError } = await query
-      // if (fetchError) throw fetchError
-
-      if (!isTourMode) {
-        // TODO: S.10 — replace with real Supabase query
-        setSessions([])
+      if (isTourMode) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        let filtered = ALL_MOCK_SESSIONS
+        if (classId) filtered = filtered.filter(s => s.classId === classId)
+        else if (classIds) filtered = filtered.filter(s => classIds.includes(s.classId))
+        setSessions(filtered)
         return
       }
 
-      await new Promise(resolve => setTimeout(resolve, 500))
-      const filtered = classId
-        ? ALL_MOCK_SESSIONS.filter(s => s.classId === classId)
-        : ALL_MOCK_SESSIONS
-      setSessions(filtered)
+      let query = supabase
+        .from(TABLES.SESSIONS)
+        .select('*')
+        .order('date', { ascending: true })
+
+      if (classId) {
+        query = query.eq('class_id', classId)
+      } else if (classIds && classIds.length > 0) {
+        query = query.in('class_id', classIds)
+      } else if (!classId && !classIds) {
+        // No filter — caller should pass classIds to scope results
+        setSessions([])
+        setLoading(false)
+        return
+      }
+
+      const { data, error: fetchError } = await query
+      if (fetchError) throw fetchError
+      setSessions((data ?? []).map(rowToSession))
     } catch (err: any) {
       setError(err.message || 'Failed to fetch sessions')
       setSessions([])
@@ -209,17 +238,85 @@ export function useSessions(classId?: string) {
     }
   }
 
+  async function cancelSession(sessionId: string, reason?: string) {
+    if (isTourMode) {
+      setSessions(prev => prev.map(s =>
+        s.id === sessionId
+          ? { ...s, status: 'canceled', notes: reason || s.notes }
+          : s
+      ))
+      return { error: null }
+    }
+    try {
+      const { error: updateError } = await supabase
+        .from(TABLES.SESSIONS)
+        .update({ status: 'canceled', notes: reason || null })
+        .eq('id', sessionId)
+      if (updateError) throw updateError
+      setSessions(prev => prev.map(s =>
+        s.id === sessionId
+          ? { ...s, status: 'canceled', notes: reason || s.notes }
+          : s
+      ))
+      return { error: null }
+    } catch (err: any) {
+      return { error: err.message }
+    }
+  }
+
+  async function updateLessonTopic(sessionId: string, topic: string) {
+    if (isTourMode) {
+      setSessions(prev => prev.map(s =>
+        s.id === sessionId ? { ...s, lessonTopic: topic } : s
+      ))
+      return { error: null }
+    }
+    try {
+      const { error: updateError } = await supabase
+        .from(TABLES.SESSIONS)
+        .update({ lesson_topic: topic })
+        .eq('id', sessionId)
+      if (updateError) throw updateError
+      setSessions(prev => prev.map(s =>
+        s.id === sessionId ? { ...s, lessonTopic: topic } : s
+      ))
+      return { error: null }
+    } catch (err: any) {
+      return { error: err.message }
+    }
+  }
+
+  async function updateSessionLocation(sessionId: string, locationName: string, locationAddress: string) {
+    if (isTourMode) {
+      setSessions(prev => prev.map(s =>
+        s.id === sessionId ? { ...s, locationName, locationAddress } : s
+      ))
+      return { error: null }
+    }
+    try {
+      const { error: updateError } = await supabase
+        .from(TABLES.SESSIONS)
+        .update({ location_name: locationName, location_address: locationAddress })
+        .eq('id', sessionId)
+      if (updateError) throw updateError
+      setSessions(prev => prev.map(s =>
+        s.id === sessionId ? { ...s, locationName, locationAddress } : s
+      ))
+      return { error: null }
+    } catch (err: any) {
+      return { error: err.message }
+    }
+  }
+
   const getUpcomingSessions = useCallback(
     (days: number): Session[] => {
-      const today = new Date(TODAY)
-      const end = new Date(TODAY)
+      const todayStr = new Date().toISOString().split('T')[0]
+      const end = new Date()
       end.setDate(end.getDate() + days)
-
-      const todayStr = today.toISOString().split('T')[0]
       const endStr = end.toISOString().split('T')[0]
 
       return sessions
-        .filter(s => s.date >= todayStr && s.date <= endStr && s.status !== 'canceled')
+        .filter(s => s.date >= todayStr && s.date <= endStr)
         .sort((a, b) => {
           const dateCompare = a.date.localeCompare(b.date)
           if (dateCompare !== 0) return dateCompare
@@ -247,6 +344,9 @@ export function useSessions(classId?: string) {
     loading,
     error,
     refetch: fetchSessions,
+    cancelSession,
+    updateLessonTopic,
+    updateSessionLocation,
     getUpcomingSessions,
     getSessionsByDateRange,
   }

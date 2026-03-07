@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import {
   View,
   Text,
@@ -7,11 +7,13 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from 'react-native'
+import { useFocusEffect } from '@react-navigation/native'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useClasses } from '../../hooks/useClasses'
 import { useSessions, Session } from '../../hooks/useSessions'
 import { useAvailability } from '../../hooks/useAvailability'
-import { CURRENT_USER, MOCK_CLASS_TYPES } from '../../data/mockData'
+import { useAuth } from '../../contexts/AuthContext'
+import { CURRENT_USER } from '../../data/mockData'
 import { SessionCard } from '../../components/SessionCard'
 
 interface DashboardScreenProps {
@@ -27,39 +29,66 @@ export default function DashboardScreen({
 }: DashboardScreenProps) {
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
+  const { profile } = useAuth()
   const { classes, classTypes, servants, loading: classesLoading, refetch: refetchClasses, getClassById, getServantById } = useClasses()
-  const { sessions, loading: sessionsLoading, refetch: refetchSessions, getUpcomingSessions } = useSessions()
+  const classIds = classes.map(c => c.id)
+  // Only pass classIds after classes have loaded — prevents premature empty fetch
+  const { sessions, loading: sessionsLoading, refetch: refetchSessions, getUpcomingSessions } = useSessions(
+    undefined,
+    classesLoading ? undefined : classIds.length > 0 ? classIds : undefined,
+  )
   const { loading: availLoading, refetch: refetchAvail, getUnavailableServantsForDate, isServantAvailable } = useAvailability()
 
   const loading = classesLoading || sessionsLoading || availLoading
 
   const greeting = getGreeting()
-  const firstName = CURRENT_USER.fullName.split(' ')[0]
+  const firstName = profile?.full_name?.split(' ')[0] ?? CURRENT_USER.fullName.split(' ')[0]
 
-  // Get upcoming sessions for next 14 days
-  const upcoming = getUpcomingSessions(14)
+  const [visibleDays, setVisibleDays] = useState(14)
 
-  // Group sessions by date
+  // Get upcoming sessions for current window
+  const upcoming = getUpcomingSessions(visibleDays)
+  const allSessions = getUpcomingSessions(365)
+  const hasMore = allSessions.length > upcoming.length
+
+  // Group sessions by date with week dividers
   const sections = groupSessionsByDate(upcoming)
 
-  // Check if user is unavailable for any upcoming date
-  const myUpcomingUnavailable = upcoming.filter(
+  // Alerts are scoped to the first 14 days
+  const alertWindow = getUpcomingSessions(14)
+
+  // Check if user is unavailable for any upcoming date (14-day window)
+  const myUpcomingUnavailable = alertWindow.filter(
     s => !isServantAvailable(CURRENT_USER.id, s.date)
   )
 
-  // Find sessions with thin staffing (<=3 available)
-  const thinStaffingSessions = upcoming.filter(s => {
+  // Find dates with thin staffing (<=3 available) — consolidate into one alert (14-day window)
+  const thinStaffingDates = alertWindow.reduce<{ date: string; label: string; count: number }[]>((acc, s) => {
     const cls = getClassById(s.classId)
-    if (!cls) return false
+    if (!cls) return acc
     const unavailableIds = getUnavailableServantsForDate(s.date, cls.servantIds)
     const availableCount = cls.servantIds.length - unavailableIds.length
-    return availableCount <= 3
-  })
+    if (availableCount <= 3 && !acc.find(a => a.date === s.date)) {
+      acc.push({ date: s.date, label: formatShortDate(s.date), count: availableCount })
+    }
+    return acc
+  }, [])
+
+  // Refetch all data whenever the screen comes into focus (e.g. returning from onboarding)
+  useFocusEffect(
+    React.useCallback(() => {
+      refetchClasses()
+      refetchAvail()
+      // Sessions refetch is triggered by classIds changing after refetchClasses resolves,
+      // but explicitly call it too in case classIds haven't changed (e.g. pull-to-refresh)
+      refetchSessions()
+    }, [])
+  )
 
   function handleRefresh() {
     refetchClasses()
-    refetchSessions()
     refetchAvail()
+    refetchSessions()
   }
 
   function renderHeader() {
@@ -81,29 +110,25 @@ export default function DashboardScreen({
   }
 
   function renderAlerts() {
-    if (thinStaffingSessions.length === 0 && myUpcomingUnavailable.length === 0) return null
+    if (thinStaffingDates.length === 0 && myUpcomingUnavailable.length === 0) return null
 
     return (
       <View style={styles.alertsSection}>
-        {thinStaffingSessions.map(s => {
-          const cls = getClassById(s.classId)
-          if (!cls) return null
-          const unavailableIds = getUnavailableServantsForDate(s.date, cls.servantIds)
-          const availableCount = cls.servantIds.length - unavailableIds.length
-          const dateLabel = formatShortDate(s.date)
-          return (
-            <View key={s.id} style={styles.alertCard}>
-              <Text style={styles.alertIcon}>{'\u{26A0}\u{FE0F}'}</Text>
-              <Text style={styles.alertText}>
-                Only {availableCount} servant{availableCount !== 1 ? 's' : ''} available {dateLabel} for {cls.name}
-              </Text>
-            </View>
-          )
-        })}
+        {thinStaffingDates.length > 0 && (
+          <View style={styles.alertCard}>
+            <Text style={styles.alertIcon}>{'\u26A0\uFE0F'}</Text>
+            <Text style={styles.alertText}>
+              {thinStaffingDates.length === 1
+                ? `Only ${thinStaffingDates[0].count} servant${thinStaffingDates[0].count !== 1 ? 's' : ''} available on ${thinStaffingDates[0].label}`
+                : `Thin staffing on ${thinStaffingDates.length} upcoming dates: ${thinStaffingDates.map(d => d.label).join(', ')}`
+              }
+            </Text>
+          </View>
+        )}
 
         {myUpcomingUnavailable.length > 0 && (
           <View style={[styles.alertCard, styles.alertInfo]}>
-            <Text style={styles.alertIcon}>{'\u{1F4CB}'}</Text>
+            <Text style={styles.alertIcon}>{'\uD83D\uDCCB'}</Text>
             <Text style={styles.alertText}>
               You're marked unavailable for {myUpcomingUnavailable.length} upcoming session{myUpcomingUnavailable.length !== 1 ? 's' : ''}
             </Text>
@@ -116,7 +141,7 @@ export default function DashboardScreen({
   function renderSessionItem({ item: session }: { item: Session }) {
     const cls = getClassById(session.classId)
     const classType = cls
-      ? MOCK_CLASS_TYPES.find(ct => ct.id === cls.classTypeId)
+      ? classTypes.find(ct => ct.id === cls.classTypeId)
       : undefined
     const lessonServant = session.lessonServantId
       ? getServantById(session.lessonServantId)
@@ -142,9 +167,21 @@ export default function DashboardScreen({
     )
   }
 
-  function renderSectionHeader({ section }: { section: { title: string } }) {
+  function renderSectionHeader({ section }: { section: { title: string; weekStart: boolean } }) {
     return (
-      <Text style={styles.dateSectionHeader}>{section.title}</Text>
+      <View>
+        {section.weekStart && <View style={styles.weekDivider} />}
+        <Text style={styles.dateSectionHeader}>{section.title}</Text>
+      </View>
+    )
+  }
+
+  function renderFooter() {
+    if (!hasMore) return null
+    return (
+      <TouchableOpacity style={styles.loadMoreButton} onPress={() => setVisibleDays(d => d + 14)}>
+        <Text style={styles.loadMoreText}>Load more sessions</Text>
+      </TouchableOpacity>
     )
   }
 
@@ -184,6 +221,7 @@ export default function DashboardScreen({
         renderItem={renderSessionItem}
         renderSectionHeader={renderSectionHeader}
         ListHeaderComponent={renderHeader}
+        ListFooterComponent={renderFooter}
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
         stickySectionHeadersEnabled={false}
@@ -207,7 +245,7 @@ function getGreeting(): string {
 function formatTodayDate(): string {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-  const d = new Date('2026-02-23T12:00:00')
+  const d = new Date()
   return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`
 }
 
@@ -217,7 +255,16 @@ function formatShortDate(dateStr: string): string {
   return `${months[d.getMonth()]} ${d.getDate()}`
 }
 
-function groupSessionsByDate(sessions: Session[]): Array<{ title: string; data: Session[] }> {
+function getISOWeek(dateStr: string): string {
+  const d = new Date(dateStr + 'T12:00:00')
+  // Return year+week number as a string key for grouping
+  const day = d.getDay() // 0=Sun
+  const monday = new Date(d)
+  monday.setDate(d.getDate() - ((day + 6) % 7)) // shift to Monday
+  return monday.toISOString().split('T')[0]
+}
+
+function groupSessionsByDate(sessions: Session[]): Array<{ title: string; weekStart: boolean; data: Session[] }> {
   const groups: Record<string, Session[]> = {}
   for (const session of sessions) {
     if (!groups[session.date]) {
@@ -227,17 +274,24 @@ function groupSessionsByDate(sessions: Session[]): Array<{ title: string; data: 
   }
 
   const sortedDates = Object.keys(groups).sort()
-  return sortedDates.map(date => ({
-    title: formatSectionDate(date),
-    data: groups[date],
-  }))
+  let prevWeek: string | null = null
+  return sortedDates.map(date => {
+    const week = getISOWeek(date)
+    const weekStart = prevWeek !== null && week !== prevWeek
+    prevWeek = week
+    return {
+      title: formatSectionDate(date),
+      weekStart,
+      data: groups[date],
+    }
+  })
 }
 
 function formatSectionDate(dateStr: string): string {
-  const today = '2026-02-23'
+  const today = new Date().toISOString().split('T')[0]
   if (dateStr === today) return 'Today'
 
-  const tomorrow = new Date('2026-02-23T12:00:00')
+  const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   if (dateStr === tomorrow.toISOString().split('T')[0]) return 'Tomorrow'
 
@@ -369,6 +423,23 @@ const createStyles = (colors: ThemeColors) => ({
     marginTop: 8,
     marginBottom: 8,
     paddingTop: 4,
+  },
+  weekDivider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  loadMoreButton: {
+    alignItems: 'center' as const,
+    paddingVertical: 16,
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  loadMoreText: {
+    fontSize: 15,
+    color: colors.primary,
+    fontWeight: '600' as const,
   },
 
   // Empty

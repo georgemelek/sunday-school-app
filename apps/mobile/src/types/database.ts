@@ -552,43 +552,61 @@ export type Database = {
           class_admin_id: string | null
           class_id: string | null
           created_at: string | null
+          created_by: string | null
           date: string
           end_time: string | null
           id: string
           lesson_giver_id: string | null
           lesson_page: string | null
+          lesson_reference: string | null
+          lesson_servant_id: string | null
           lesson_topic: string | null
-          location: string | null
+          location_address: string | null
+          location_name: string | null
           notes: string | null
           start_time: string | null
+          status: string | null
+          updated_at: string | null
         }
         Insert: {
           class_admin_id?: string | null
           class_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           date: string
           end_time?: string | null
           id?: string
           lesson_giver_id?: string | null
           lesson_page?: string | null
+          lesson_reference?: string | null
+          lesson_servant_id?: string | null
           lesson_topic?: string | null
-          location?: string | null
+          location_address?: string | null
+          location_name?: string | null
           notes?: string | null
           start_time?: string | null
+          status?: string | null
+          updated_at?: string | null
         }
         Update: {
           class_admin_id?: string | null
           class_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           date?: string
           end_time?: string | null
           id?: string
           lesson_giver_id?: string | null
           lesson_page?: string | null
+          lesson_reference?: string | null
+          lesson_servant_id?: string | null
           lesson_topic?: string | null
-          location?: string | null
+          location_address?: string | null
+          location_name?: string | null
           notes?: string | null
           start_time?: string | null
+          status?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -606,8 +624,22 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sessions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "sessions_lesson_giver_id_fkey"
             columns: ["lesson_giver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_lesson_servant_id_fkey"
+            columns: ["lesson_servant_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

@@ -33,7 +33,7 @@ export function SessionCard({
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
 
-  const isToday = session.date === '2026-02-23'
+  const isToday = session.date === new Date().toISOString().split('T')[0]
   const isCanceled = session.status === 'canceled'
 
   const timeLabel = formatTimeRange(session.startTime, session.endTime)
@@ -97,8 +97,11 @@ export function SessionCard({
           >
             <Text style={styles.detailIcon}>{'\u{1F4CD}'}</Text>
             <Text style={[styles.detailText, session.locationAddress && styles.locationLink]} numberOfLines={1}>
-              {session.locationName}
+              {session.locationName || 'TBD'}
             </Text>
+            {(!session.locationName || session.locationName === 'TBD') && (
+              <Text style={{ fontSize: 14, color: colors.warning, marginLeft: 4, fontWeight: '700' }}>!</Text>
+            )}
           </TouchableOpacity>
 
           {/* Teaching servant */}
