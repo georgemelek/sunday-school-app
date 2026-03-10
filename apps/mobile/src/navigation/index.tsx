@@ -142,6 +142,10 @@ function GradesStackNavigator() {
           <OnboardingScreen
             onComplete={() => navigation.replace('MyGrades')}
             onSkip={() => navigation.goBack()}
+            onGoToAvailability={() => {
+              navigation.replace('MyGrades')
+              navigation.getParent()?.navigate('AvailabilityTab')
+            }}
           />
         )}
       </GradesStack.Screen>

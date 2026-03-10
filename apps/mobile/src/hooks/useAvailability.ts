@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useTour } from '../contexts/TourContext'
-// import { supabase } from '../lib/supabase'
+import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabase'
 
 export interface AvailabilityRecord {
   id: string
@@ -128,45 +129,51 @@ function buildMockAvailability(): AvailabilityRecord[] {
 
 const ALL_MOCK_AVAILABILITY = buildMockAvailability()
 
+function rowToRecord(row: any): AvailabilityRecord {
+  return {
+    id: row.id,
+    servantId: row.servant_id,
+    date: row.date,
+    available: row.available,
+    notes: row.notes ?? '',
+  }
+}
+
 export function useAvailability(servantId?: string) {
   const { isTourMode } = useTour()
+  const { profile } = useAuth()
   const [availability, setAvailability] = useState<AvailabilityRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Real user ID for Supabase operations (undefined in tour mode)
+  const realUserId = isTourMode ? undefined : profile?.id
+
   useEffect(() => {
     fetchAvailability()
-  }, [servantId, isTourMode])
+  }, [servantId, isTourMode, profile?.id])
 
   async function fetchAvailability() {
     setLoading(true)
     setError(null)
 
     try {
-      // TODO: Replace with actual Supabase query
-      // const query = supabase
-      //   .from('servant_availability')
-      //   .select('*')
-      //   .order('date', { ascending: true })
-      //
-      // if (servantId) {
-      //   query.eq('servant_id', servantId)
-      // }
-      //
-      // const { data, error: fetchError } = await query
-      // if (fetchError) throw fetchError
-
-      if (!isTourMode) {
-        // TODO: S.11 — replace with real Supabase query
-        setAvailability([])
-        return
+      if (isTourMode) {
+        await new Promise(resolve => setTimeout(resolve, 500))
+        const filtered = servantId
+          ? ALL_MOCK_AVAILABILITY.filter(r => r.servantId === servantId)
+          : ALL_MOCK_AVAILABILITY
+        setAvailability(filtered)
+      } else {
+        let query = supabase
+          .from('servant_availability')
+          .select('*')
+          .order('date', { ascending: true })
+        if (realUserId) query = query.eq('servant_id', realUserId)
+        const { data, error: fetchError } = await query
+        if (fetchError) throw fetchError
+        setAvailability((data ?? []).map(rowToRecord))
       }
-
-      await new Promise(resolve => setTimeout(resolve, 500))
-      const filtered = servantId
-        ? ALL_MOCK_AVAILABILITY.filter(r => r.servantId === servantId)
-        : ALL_MOCK_AVAILABILITY
-      setAvailability(filtered)
     } catch (err: any) {
       setError(err.message || 'Failed to fetch availability')
       setAvailability([])
@@ -177,45 +184,64 @@ export function useAvailability(servantId?: string) {
 
   const toggleAvailability = useCallback(
     async (targetServantId: string, date: string) => {
+      const existing = availability.find(
+        r => r.servantId === targetServantId && r.date === date
+      )
+
+      // Optimistic update
+      if (existing) {
+        setAvailability(prev => prev.filter(r => r.id !== existing.id))
+      } else {
+        const optimistic: AvailabilityRecord = {
+          id: `avail-${Date.now()}`,
+          servantId: targetServantId,
+          date,
+          available: false,
+          notes: '',
+        }
+        setAvailability(prev => [...prev, optimistic])
+      }
+
+      if (isTourMode) {
+        return { error: null }
+      }
+
+      // Use real auth user ID for Supabase (RLS requires servant_id = auth.uid())
+      const supabaseServantId = realUserId
+      if (!supabaseServantId) {
+        return { error: 'Not authenticated' }
+      }
+
       try {
-        // TODO: Replace with actual Supabase upsert
-        // const { error: upsertError } = await supabase
-        //   .from('servant_availability')
-        //   .upsert({
-        //     servant_id: targetServantId,
-        //     date,
-        //     available: !isCurrentlyUnavailable,
-        //   }, { onConflict: 'servant_id,date' })
-        //
-        // if (upsertError) throw upsertError
-
-        setAvailability(prev => {
-          const existing = prev.find(
-            r => r.servantId === targetServantId && r.date === date
-          )
-
-          if (existing) {
-            // Record exists (unavailable) — remove it to mark available
-            return prev.filter(r => r.id !== existing.id)
-          } else {
-            // No record (available) — add one to mark unavailable
-            const newRecord: AvailabilityRecord = {
-              id: `avail-${Date.now()}`,
-              servantId: targetServantId,
-              date,
-              available: false,
-              notes: '',
-            }
-            return [...prev, newRecord]
-          }
-        })
-
+        if (existing) {
+          // Remove unavailable record → servant is now available
+          const { error: deleteError } = await supabase
+            .from('servant_availability')
+            .delete()
+            .eq('servant_id', supabaseServantId)
+            .eq('date', date)
+          if (deleteError) throw deleteError
+        } else {
+          // Insert unavailable record
+          const { error: insertError } = await supabase
+            .from('servant_availability')
+            .insert({ servant_id: supabaseServantId, date, available: false })
+          if (insertError) throw insertError
+        }
         return { error: null }
       } catch (err: any) {
+        // Revert optimistic update on error
+        if (existing) {
+          setAvailability(prev => [...prev, existing])
+        } else {
+          setAvailability(prev =>
+            prev.filter(r => !(r.servantId === targetServantId && r.date === date))
+          )
+        }
         return { error: err.message }
       }
     },
-    []
+    [availability, isTourMode, realUserId]
   )
 
   const isServantAvailable = useCallback(

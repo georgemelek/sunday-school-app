@@ -102,7 +102,7 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 - [x] **S.8**: Student CRUD — insert/update/delete in `students` table (wire AddStudentScreen/EditStudentScreen to Supabase)
 - [x] **S.9**: Attendance — batch insert (upsert on student_id+date), history queries; tour mode uses mock data like useStudents pattern
 - [x] **S.10**: Classes & sessions — CRUD for servant-created classes, session list read; tour mode uses mock data
-- [ ] **S.11**: Availability — upsert, date range queries, coverage calculations; tour mode uses mock data
+- [x] **S.11**: Availability — upsert, date range queries, coverage calculations; tour mode uses mock data
 - [ ] **S.12**: Outreach — assignments, visit logging, progress queries; tour mode uses mock data
 - [ ] **S.13**: Real-time subscriptions — attendance, availability, session changes
 

@@ -12,7 +12,9 @@ import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useAvailability } from '../../hooks/useAvailability'
 import { useSessions, Session } from '../../hooks/useSessions'
 import { useClasses } from '../../hooks/useClasses'
-import { CURRENT_USER, MOCK_CLASS_TYPES } from '../../data/mockData'
+import { useAuth } from '../../contexts/AuthContext'
+import { useTour } from '../../contexts/TourContext'
+import { CURRENT_USER } from '../../data/mockData'
 
 interface AvailabilityScreenProps {
   onBack?: () => void
@@ -31,23 +33,33 @@ interface DateGroup {
 export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) {
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
+  const { profile } = useAuth()
+  const { isTourMode } = useTour()
+  // In tour mode use the mock user ID for filtering mock data; in real mode use profile UUID
+  const currentUserId = isTourMode ? CURRENT_USER.id : (profile?.id ?? '')
+
   const {
     loading: availLoading,
     refetch: refetchAvail,
     toggleAvailability,
     isServantAvailable,
     availability,
-  } = useAvailability(CURRENT_USER.id)
+  } = useAvailability(isTourMode ? CURRENT_USER.id : undefined)
 
-  const { sessions, loading: sessionsLoading, refetch: refetchSessions } = useSessions()
-  const { classes, loading: classesLoading, refetch: refetchClasses, getClassById } = useClasses()
+  const { classes, classTypes, loading: classesLoading, refetch: refetchClasses, getClassById } = useClasses()
+  const classIds = classes.map(c => c.id)
+  // Only pass classIds after classes have loaded — prevents premature empty fetch
+  const { sessions, loading: sessionsLoading, refetch: refetchSessions } = useSessions(
+    undefined,
+    classesLoading ? undefined : classIds.length > 0 ? classIds : undefined,
+  )
 
   const loading = availLoading || sessionsLoading || classesLoading
 
   // Build date groups: next 30 days, only dates with scheduled sessions
   const dateGroups = useMemo(() => {
-    const today = new Date('2026-02-23T12:00:00')
-    const end = new Date('2026-02-23T12:00:00')
+    const today = new Date()
+    const end = new Date()
     end.setDate(end.getDate() + 30)
 
     const todayStr = today.toISOString().split('T')[0]
@@ -74,7 +86,7 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
         const sessionInfos = grouped[date].map(s => {
           const cls = getClassById(s.classId)
           const classType = cls
-            ? MOCK_CLASS_TYPES.find(ct => ct.id === cls.classTypeId)
+            ? classTypes.find(ct => ct.id === cls.classTypeId)
             : undefined
           return {
             id: s.id,
@@ -91,11 +103,11 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
       })
 
     return result
-  }, [sessions, classes, getClassById])
+  }, [sessions, classes, classTypes, getClassById])
 
   // Count unavailable dates
   const unavailableCount = useMemo(() => {
-    return dateGroups.filter(g => !isServantAvailable(CURRENT_USER.id, g.date)).length
+    return dateGroups.filter(g => !isServantAvailable(currentUserId, g.date)).length
   }, [dateGroups, isServantAvailable])
 
   function handleRefresh() {
@@ -105,7 +117,7 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
   }
 
   function handleToggle(date: string, dateLabel: string) {
-    const currentlyAvailable = isServantAvailable(CURRENT_USER.id, date)
+    const currentlyAvailable = isServantAvailable(currentUserId, date)
 
     if (currentlyAvailable) {
       // Marking unavailable — show confirmation
@@ -117,13 +129,13 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
           {
             text: 'Mark Unavailable',
             style: 'destructive',
-            onPress: () => toggleAvailability(CURRENT_USER.id, date),
+            onPress: () => toggleAvailability(currentUserId, date),
           },
         ]
       )
     } else {
       // Marking available — no confirmation needed
-      toggleAvailability(CURRENT_USER.id, date)
+      toggleAvailability(currentUserId, date)
     }
   }
 
@@ -181,7 +193,7 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
           </View>
         ) : (
           dateGroups.map(group => {
-            const available = isServantAvailable(CURRENT_USER.id, group.date)
+            const available = isServantAvailable(currentUserId, group.date)
 
             return (
               <View key={group.date} style={styles.dateCard}>
@@ -226,10 +238,10 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
 // --- Helpers ---
 
 function formatDateLabel(dateStr: string): string {
-  const today = '2026-02-23'
+  const today = new Date().toISOString().split('T')[0]
   if (dateStr === today) return 'Today'
 
-  const tomorrow = new Date('2026-02-23T12:00:00')
+  const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
   if (dateStr === tomorrow.toISOString().split('T')[0]) return 'Tomorrow'
 

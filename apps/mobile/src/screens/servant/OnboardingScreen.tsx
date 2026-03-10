@@ -42,6 +42,7 @@ interface ClassDefinition {
 interface OnboardingScreenProps {
   onComplete: () => void
   onSkip: () => void
+  onGoToAvailability?: () => void
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -205,7 +206,7 @@ function GradePicker({
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
-export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScreenProps) {
+export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailability }: OnboardingScreenProps) {
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
   const { profile } = useAuth()
@@ -755,6 +756,12 @@ export default function OnboardingScreen({ onComplete, onSkip }: OnboardingScree
         <TouchableOpacity style={styles.confirmationPrimaryButton} onPress={() => setStep(4)}>
           <Text style={styles.confirmationPrimaryButtonText}>Add Students (optional) →</Text>
         </TouchableOpacity>
+
+        {onGoToAvailability && (
+          <TouchableOpacity style={styles.confirmationSecondaryButton} onPress={onGoToAvailability}>
+            <Text style={styles.confirmationSecondaryButtonText}>Set My Availability</Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity style={styles.confirmationSecondaryButton} onPress={onComplete}>
           <Text style={styles.confirmationSecondaryButtonText}>Go to Dashboard</Text>
