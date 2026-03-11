@@ -128,6 +128,7 @@ function buildMockAvailability(): AvailabilityRecord[] {
 }
 
 const ALL_MOCK_AVAILABILITY = buildMockAvailability()
+export { ALL_MOCK_AVAILABILITY as ALL_MOCK_AVAILABILITY_EXPORT }
 
 function rowToRecord(row: any): AvailabilityRecord {
   return {

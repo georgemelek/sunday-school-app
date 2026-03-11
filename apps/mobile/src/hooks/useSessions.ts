@@ -182,6 +182,7 @@ function buildMockSessions(): Session[] {
 }
 
 const ALL_MOCK_SESSIONS = buildMockSessions()
+export { ALL_MOCK_SESSIONS as ALL_MOCK_SESSIONS_EXPORT }
 
 // classId: single class filter (e.g. from SessionDetail)
 // classIds: multiple class filter (e.g. dashboard — pass servant's class ID list)

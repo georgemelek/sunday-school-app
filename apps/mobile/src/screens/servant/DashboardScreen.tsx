@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   View,
   Text,
@@ -7,12 +7,13 @@ import {
   RefreshControl,
   TouchableOpacity,
 } from 'react-native'
+import { useQueryClient } from '@tanstack/react-query'
 import { useFocusEffect } from '@react-navigation/native'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
-import { useClasses } from '../../hooks/useClasses'
-import { useSessions, Session } from '../../hooks/useSessions'
-import { useAvailability } from '../../hooks/useAvailability'
+import { useClassesQuery, useSessionsQuery, useAvailabilityQuery, dashboardKeys } from '../../queries/dashboardQueries'
+import type { Session } from '../../hooks/useSessions'
 import { useAuth } from '../../contexts/AuthContext'
+import { useTour } from '../../contexts/TourContext'
 import { CURRENT_USER } from '../../data/mockData'
 import { SessionCard } from '../../components/SessionCard'
 
@@ -30,21 +31,66 @@ export default function DashboardScreen({
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
   const { profile } = useAuth()
-  const { classes, classTypes, servants, loading: classesLoading, refetch: refetchClasses, getClassById, getServantById } = useClasses()
-  const classIds = classes.map(c => c.id)
-  // Only pass classIds after classes have loaded — prevents premature empty fetch
-  const { sessions, loading: sessionsLoading, refetch: refetchSessions, getUpcomingSessions } = useSessions(
-    undefined,
-    classesLoading ? undefined : classIds.length > 0 ? classIds : undefined,
-  )
-  const { loading: availLoading, refetch: refetchAvail, getUnavailableServantsForDate, isServantAvailable } = useAvailability()
+  const { isTourMode } = useTour()
+  const queryClient = useQueryClient()
 
-  const loading = classesLoading || sessionsLoading || availLoading
+  const profileId = profile?.id
+
+  const classesQuery = useClassesQuery(profileId, isTourMode)
+  const { classes = [], classTypes = [], servants = [] } = classesQuery.data ?? {}
+  const classIds = classes.map(c => c.id)
+  const classesLoaded = !classesQuery.isLoading
+
+  const sessionsQuery = useSessionsQuery(
+    classIds,
+    classesLoaded && classIds.length > 0,
+    isTourMode,
+  )
+  const sessions = sessionsQuery.data ?? []
+
+  const availQuery = useAvailabilityQuery(profileId, isTourMode)
+  const availability = availQuery.data ?? []
+
+  const loading = classesQuery.isLoading || sessionsQuery.isLoading || availQuery.isLoading
+  const isRefreshing = classesQuery.isFetching || sessionsQuery.isFetching || availQuery.isFetching
 
   const greeting = getGreeting()
   const firstName = profile?.full_name?.split(' ')[0] ?? CURRENT_USER.fullName.split(' ')[0]
 
   const [visibleDays, setVisibleDays] = useState(14)
+
+  // Derived helpers (inlined from old hooks)
+  const todayStr = new Date().toISOString().split('T')[0]
+
+  function getUpcomingSessions(days: number): Session[] {
+    const end = new Date()
+    end.setDate(end.getDate() + days)
+    const endStr = end.toISOString().split('T')[0]
+    return sessions
+      .filter(s => s.date >= todayStr && s.date <= endStr)
+      .sort((a, b) => {
+        const dc = a.date.localeCompare(b.date)
+        return dc !== 0 ? dc : a.startTime.localeCompare(b.startTime)
+      })
+  }
+
+  function getClassById(id: string) {
+    return classes.find(c => c.id === id)
+  }
+
+  function getServantById(id: string) {
+    return servants.find(s => s.id === id)
+  }
+
+  function isServantAvailable(servantId: string, date: string): boolean {
+    return !availability.some(r => r.servantId === servantId && r.date === date && !r.available)
+  }
+
+  function getUnavailableServantsForDate(date: string, servantIds: string[]): string[] {
+    return servantIds.filter(sid =>
+      availability.some(r => r.servantId === sid && r.date === date && !r.available)
+    )
+  }
 
   // Get upcoming sessions for current window
   const upcoming = getUpcomingSessions(visibleDays)
@@ -74,21 +120,15 @@ export default function DashboardScreen({
     return acc
   }, [])
 
-  // Refetch all data whenever the screen comes into focus (e.g. returning from onboarding)
+  // Invalidate on first focus after onboarding writes — React Query handles dedup
   useFocusEffect(
-    React.useCallback(() => {
-      refetchClasses()
-      refetchAvail()
-      // Sessions refetch is triggered by classIds changing after refetchClasses resolves,
-      // but explicitly call it too in case classIds haven't changed (e.g. pull-to-refresh)
-      refetchSessions()
-    }, [])
+    useCallback(() => {
+      queryClient.invalidateQueries({ queryKey: dashboardKeys.all })
+    }, [queryClient])
   )
 
   function handleRefresh() {
-    refetchClasses()
-    refetchAvail()
-    refetchSessions()
+    queryClient.invalidateQueries({ queryKey: dashboardKeys.all })
   }
 
   function renderHeader() {
@@ -226,7 +266,7 @@ export default function DashboardScreen({
         contentContainerStyle={styles.listContent}
         stickySectionHeadersEnabled={false}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={handleRefresh} tintColor={colors.primary} />
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
         }
       />
     </View>
