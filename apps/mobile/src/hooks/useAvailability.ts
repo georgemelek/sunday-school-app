@@ -31,7 +31,7 @@ function buildMockAvailability(): AvailabilityRecord[] {
     }
   }
 
-  // George Melek (servant-1)
+  // servant-1 (Alex Martin)
   addUnavailable('servant-1', [
     '2025-08-31', '2025-09-07',
     '2025-10-24', '2025-10-26',
@@ -43,7 +43,7 @@ function buildMockAvailability(): AvailabilityRecord[] {
     '2026-03-01',
   ])
 
-  // Fady Roufail (servant-2)
+  // servant-2 (Jordan Taylor)
   addUnavailable('servant-2', [
     '2025-10-12', '2025-10-17',
     '2025-11-09', '2025-11-14',
@@ -54,7 +54,7 @@ function buildMockAvailability(): AvailabilityRecord[] {
     '2026-03-29',
   ])
 
-  // Revana Awadallah (servant-3)
+  // servant-3 (Riley Morgan)
   addUnavailable('servant-3', [
     '2025-10-19', '2025-10-24', '2025-10-26',
     '2025-11-28', '2025-11-30',
@@ -67,7 +67,7 @@ function buildMockAvailability(): AvailabilityRecord[] {
     '2026-03-01',
   ])
 
-  // Monica Zaky (servant-4)
+  // servant-4 (Casey Brooks)
   addUnavailable('servant-4', [
     '2025-09-07', '2025-09-26',
     '2025-10-12',
@@ -77,7 +77,7 @@ function buildMockAvailability(): AvailabilityRecord[] {
     '2026-03-01',
   ])
 
-  // Steven Yousef (servant-5)
+  // servant-5 (Sam Rivera)
   addUnavailable('servant-5', [
     '2025-09-19', '2025-09-26',
     '2025-10-03', '2025-10-10',
@@ -85,15 +85,14 @@ function buildMockAvailability(): AvailabilityRecord[] {
     '2025-11-16', '2025-11-21',
   ])
 
-  // Koki Ishak (servant-6) — no unavailability from CSV in the Feb-Mar window
-  // (Only had Nov 16/21 and Dec 19/21)
+  // servant-6 (Dana Nguyen)
   addUnavailable('servant-6', [
     '2025-11-16', '2025-11-21',
     '2025-12-19', '2025-12-21',
     '2026-03-08',
   ])
 
-  // Sarah Bekhet (servant-7)
+  // servant-7 (Morgan Ellis)
   addUnavailable('servant-7', [
     '2025-08-31', '2025-09-07',
     '2025-10-05',
@@ -108,7 +107,7 @@ function buildMockAvailability(): AvailabilityRecord[] {
     '2026-05-17',
   ])
 
-  // John Khillah (servant-8)
+  // servant-8 (Taylor Reed)
   addUnavailable('servant-8', [
     '2025-08-31', '2025-09-07',
     '2025-09-19',
@@ -117,7 +116,7 @@ function buildMockAvailability(): AvailabilityRecord[] {
     '2025-11-23',
   ])
 
-  // Christina Ishak (servant-9)
+  // servant-9 (Quinn Foster)
   addUnavailable('servant-9', [
     '2025-11-16', '2025-11-21',
     '2025-12-19', '2025-12-21',

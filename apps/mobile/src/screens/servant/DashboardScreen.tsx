@@ -57,7 +57,9 @@ export default function DashboardScreen({
   const hasError = classesQuery.isError || sessionsQuery.isError || availQuery.isError
 
   const greeting = getGreeting()
-  const firstName = profile?.full_name?.split(' ')[0] ?? CURRENT_USER.fullName.split(' ')[0]
+  const firstName = isTourMode
+    ? CURRENT_USER.fullName.split(' ')[0]
+    : (profile?.full_name?.split(' ')[0] ?? '')
 
   const [visibleDays, setVisibleDays] = useState(14)
 

@@ -4,6 +4,12 @@ import { supabase } from '../lib/supabase'
 import { TABLES } from '../lib/tables'
 import { useAuth } from '../contexts/AuthContext'
 import type { Student } from './useStudents'
+import {
+  MOCK_OUTREACH_STUDENTS,
+  MOCK_OUTREACH_ASSIGNMENTS,
+  MOCK_OUTREACH_VISITS,
+  MOCK_OUTREACH_SERVANTS,
+} from '../data/mockData'
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -57,80 +63,6 @@ export interface ManageServant {
 export const PHANTOM_SERVANT_ID = '__phantom__'
 export const PHANTOM_SERVANT_NAME = 'Other servants (not on app yet)'
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const MOCK_STUDENTS: Student[] = [
-  {
-    id: '1', grade_id: 'grade-6', first_name: 'John', last_name: 'Smith',
-    date_of_birth: '2010-05-15', gender: 'male', student_phone: null,
-    mother_first_name: 'Mary', mother_last_name: 'Smith',
-    mother_phone: '555-0101', mother_email: 'mary@example.com',
-    father_first_name: 'Bob', father_last_name: 'Smith',
-    father_phone: '555-0102', father_email: null,
-    street: '1234 Main St', city: 'Naperville', state: 'IL', zip: '60540', country: 'USA',
-    notes: null, created_by: 'user-1', created_at: '2025-09-01T00:00:00Z', updated_at: '2025-09-01T00:00:00Z',
-  },
-  {
-    id: '3', grade_id: 'grade-6', first_name: 'Michael', last_name: 'Chen',
-    date_of_birth: '2010-03-10', gender: 'male', student_phone: null,
-    mother_first_name: 'Lisa', mother_last_name: 'Chen',
-    mother_phone: '555-0103', mother_email: 'lisa@example.com',
-    father_first_name: null, father_last_name: null,
-    father_phone: null, father_email: null,
-    street: '789 Oak Ave', city: 'Aurora', state: 'IL', zip: '60505', country: 'USA',
-    notes: 'Allergic to peanuts', created_by: 'user-1', created_at: '2025-09-01T00:00:00Z', updated_at: '2025-09-01T00:00:00Z',
-  },
-  {
-    id: '5', grade_id: 'grade-6', first_name: 'Kevin', last_name: 'Ibrahim',
-    date_of_birth: '2010-07-20', gender: 'male', student_phone: null,
-    mother_first_name: null, mother_last_name: null,
-    mother_phone: '555-0105', mother_email: 'hany@example.com',
-    father_first_name: 'Hany', father_last_name: 'Ibrahim',
-    father_phone: '555-0106', father_email: null,
-    street: '456 Elm Blvd', city: 'Naperville', state: 'IL', zip: '60540', country: 'USA',
-    notes: null, created_by: 'user-1', created_at: '2025-09-01T00:00:00Z', updated_at: '2025-09-01T00:00:00Z',
-  },
-  {
-    id: '6', grade_id: 'grade-6', first_name: 'Andrew', last_name: 'Bishay',
-    date_of_birth: '2010-12-05', gender: 'male', student_phone: null,
-    mother_first_name: null, mother_last_name: null,
-    mother_phone: '555-0107', mother_email: 'mina@example.com',
-    father_first_name: null, father_last_name: null,
-    father_phone: null, father_email: null,
-    street: '321 Cedar Ln', city: 'Naperville', state: 'IL', zip: '60540', country: 'USA',
-    notes: null, created_by: 'user-1', created_at: '2025-09-01T00:00:00Z', updated_at: '2025-09-01T00:00:00Z',
-  },
-  {
-    id: '7', grade_id: 'grade-6', first_name: 'Peter', last_name: 'Gerges',
-    date_of_birth: '2010-09-14', gender: 'male', student_phone: null,
-    mother_first_name: null, mother_last_name: null,
-    mother_phone: null, mother_email: null,
-    father_first_name: null, father_last_name: null,
-    father_phone: null, father_email: null,
-    street: null, city: 'Naperville', state: 'IL', zip: '60540', country: 'USA',
-    notes: null, created_by: 'user-1', created_at: '2025-09-01T00:00:00Z', updated_at: '2025-09-01T00:00:00Z',
-  },
-]
-
-const MOCK_ASSIGNMENTS: OutreachAssignment[] = [
-  { id: 'oa-1', servantId: 'servant-1', studentId: '1', gradeName: '6th Grade', assignedAt: '2025-09-15T00:00:00Z', status: 'active' },
-  { id: 'oa-2', servantId: 'servant-1', studentId: '3', gradeName: '6th Grade', assignedAt: '2025-09-15T00:00:00Z', status: 'active' },
-  { id: 'oa-3', servantId: 'servant-1', studentId: '5', gradeName: '6th Grade', assignedAt: '2025-09-15T00:00:00Z', status: 'active' },
-  { id: 'oa-4', servantId: 'servant-2', studentId: '6', gradeName: '6th Grade', assignedAt: '2025-09-15T00:00:00Z', status: 'active' },
-  { id: 'oa-5', servantId: 'servant-1', studentId: '7', gradeName: '6th Grade', assignedAt: '2025-09-15T00:00:00Z', status: 'local_friend' },
-]
-
-const MOCK_VISITS: OutreachVisit[] = [
-  { id: 'ov-1', assignmentId: 'oa-1', visitDate: '2025-11-10', notes: "Went to Portillo's — had a great time!", type: 'visit', createdAt: '2025-11-10T20:00:00Z' },
-  { id: 'ov-2', assignmentId: 'oa-1', visitDate: '2026-01-18', notes: 'Bowling at Brunswick Zone', type: 'visit', createdAt: '2026-01-18T21:00:00Z' },
-  { id: 'ov-3', assignmentId: 'oa-3', visitDate: '2026-02-01', notes: "Got pizza at Lou Malnati's", type: 'visit', createdAt: '2026-02-01T19:30:00Z' },
-]
-
-const MOCK_SERVANTS_MANAGE = [
-  { id: 'servant-1', fullName: 'George Melek', gender: 'male'},
-  { id: 'servant-2', fullName: 'Mark Hanna', gender: 'male'},
-]
-
 // ─── Row mappers ──────────────────────────────────────────────────────────────
 
 function rowToAssignment(row: any, gradeName: string): OutreachAssignment {
@@ -178,11 +110,11 @@ export function useOutreach() {
         await new Promise(resolve => setTimeout(resolve, 500))
 
         const myId = 'servant-1'
-        const myAssignments = MOCK_ASSIGNMENTS.filter(a => a.servantId === myId)
+        const myAssignments = MOCK_OUTREACH_ASSIGNMENTS.filter(a => a.servantId === myId)
 
         const buildKid = (a: OutreachAssignment): AssignedKid => {
-          const student = MOCK_STUDENTS.find(s => s.id === a.studentId)!
-          const visits = MOCK_VISITS
+          const student = MOCK_OUTREACH_STUDENTS.find(s => s.id === a.studentId)!
+          const visits = MOCK_OUTREACH_VISITS
             .filter(v => v.assignmentId === a.id)
             .sort((x, y) => y.visitDate.localeCompare(x.visitDate))
           return { assignment: a, student, visits, lastVisit: visits[0] }
@@ -192,9 +124,9 @@ export function useOutreach() {
         setLocalFriends(myAssignments.filter(a => a.status === 'local_friend').map(buildKid))
 
         // Grade overview: all servants
-        const overview: GradeServantProgress[] = MOCK_SERVANTS_MANAGE.map(servant => {
-          const servantActive = MOCK_ASSIGNMENTS.filter(a => a.servantId === servant.id && a.status === 'active')
-          const visitedIds = new Set(MOCK_VISITS.map(v => v.assignmentId))
+        const overview: GradeServantProgress[] = MOCK_OUTREACH_SERVANTS.map(servant => {
+          const servantActive = MOCK_OUTREACH_ASSIGNMENTS.filter(a => a.servantId === servant.id && a.status === 'active')
+          const visitedIds = new Set(MOCK_OUTREACH_VISITS.map(v => v.assignmentId))
           return {
             servantId: servant.id,
             servantName: servant.fullName,
@@ -421,33 +353,33 @@ export function useOutreachManagement() {
       if (isTourMode) {
         await new Promise(resolve => setTimeout(resolve, 400))
 
-        const assignedStudentIds = new Set(MOCK_ASSIGNMENTS.filter(a => a.status === 'active').map(a => a.studentId))
-        const localIds = new Set(MOCK_ASSIGNMENTS.filter(a => a.status === 'local_friend').map(a => a.studentId))
+        const assignedStudentIds = new Set(MOCK_OUTREACH_ASSIGNMENTS.filter(a => a.status === 'active').map(a => a.studentId))
+        const localIds = new Set(MOCK_OUTREACH_ASSIGNMENTS.filter(a => a.status === 'local_friend').map(a => a.studentId))
 
         const builtServants: ManageServant[] = [
-          ...MOCK_SERVANTS_MANAGE.map(sv => ({
+          ...MOCK_OUTREACH_SERVANTS.map(sv => ({
             id: sv.id,
             fullName: sv.fullName,
-            gender: sv.gender,
-            assignedKids: MOCK_STUDENTS
+            gender: sv.gender ?? null,
+            assignedKids: MOCK_OUTREACH_STUDENTS
               .filter(s => {
-                const a = MOCK_ASSIGNMENTS.find(a => a.studentId === s.id && a.servantId === sv.id && a.status === 'active')
+                const a = MOCK_OUTREACH_ASSIGNMENTS.find(a => a.studentId === s.id && a.servantId === sv.id && a.status === 'active')
                 return !!a
               })
               .map(s => ({
                 student: s,
-                assignment: MOCK_ASSIGNMENTS.find(a => a.studentId === s.id && a.servantId === sv.id && a.status === 'active') ?? null,
+                assignment: MOCK_OUTREACH_ASSIGNMENTS.find(a => a.studentId === s.id && a.servantId === sv.id && a.status === 'active') ?? null,
               })),
           })),
           { id: PHANTOM_SERVANT_ID, fullName: PHANTOM_SERVANT_NAME, gender: null, assignedKids: [] },
         ]
 
-        const unassignedStudents = MOCK_STUDENTS.filter(s => !assignedStudentIds.has(s.id) && !localIds.has(s.id))
+        const unassignedStudents = MOCK_OUTREACH_STUDENTS.filter(s => !assignedStudentIds.has(s.id) && !localIds.has(s.id))
 
-        const localFriendKids: AssignedKid[] = MOCK_ASSIGNMENTS
+        const localFriendKids: AssignedKid[] = MOCK_OUTREACH_ASSIGNMENTS
           .filter(a => a.status === 'local_friend')
           .map(a => {
-            const student = MOCK_STUDENTS.find(s => s.id === a.studentId)!
+            const student = MOCK_OUTREACH_STUDENTS.find(s => s.id === a.studentId)!
             return { assignment: a, student, visits: [], lastVisit: undefined }
           })
 

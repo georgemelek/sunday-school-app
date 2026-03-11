@@ -15,6 +15,8 @@ import { Session } from '../../hooks/useSessions'
 import { useClasses } from '../../hooks/useClasses'
 import { logger } from '../../lib/logger'
 import { useAvailability } from '../../hooks/useAvailability'
+import { useAuth } from '../../contexts/AuthContext'
+import { useTour } from '../../contexts/TourContext'
 import { CURRENT_USER, MOCK_CLASS_TYPES } from '../../data/mockData'
 
 function getClassTypeColors(colors: ThemeColors): Record<string, string> {
@@ -43,6 +45,8 @@ export default function SessionDetailScreen({
 }: SessionDetailScreenProps) {
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
+  const { profile } = useAuth()
+  const { isTourMode } = useTour()
   const { getClassById, getServantById, getServantsByClassId } = useClasses()
   const { isServantAvailable } = useAvailability()
 
@@ -70,7 +74,8 @@ export default function SessionDetailScreen({
 
   const isCanceled = session.status === 'canceled'
   const isCompleted = session.status === 'completed'
-  const isTeaching = session.lessonServantId === CURRENT_USER.id
+  const currentUserId = isTourMode ? CURRENT_USER.id : (profile?.id ?? '')
+  const isTeaching = session.lessonServantId === currentUserId
 
   const TODAY = new Date().toISOString().split('T')[0]
   const canTakeAttendance =
