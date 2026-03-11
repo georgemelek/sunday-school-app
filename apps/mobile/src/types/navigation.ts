@@ -45,6 +45,7 @@ export type AvailabilityStackParamList = {
 export type OutreachStackParamList = {
   Outreach: undefined
   OutreachDetail: { assignedKid: AssignedKid }
+  OutreachManage: undefined
 }
 
 // --- Settings Stack ---
