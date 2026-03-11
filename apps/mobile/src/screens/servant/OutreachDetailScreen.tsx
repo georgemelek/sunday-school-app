@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import {
   View,
   Text,
@@ -10,73 +10,94 @@ import {
   TextInput,
   Platform,
 } from 'react-native'
+import { Swipeable } from 'react-native-gesture-handler'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
-import type { AssignedKid } from '../../hooks/useOutreach'
+import type { AssignedKid, OutreachVisit } from '../../hooks/useOutreach'
 import { studentDisplayName } from '../../hooks/useStudents'
 import { fillTemplate, DEFAULT_MESSAGE_TEMPLATE } from '../../utils/outreachTemplates'
 
 interface OutreachDetailScreenProps {
   assignedKid: AssignedKid
+  // Live lists so the screen reflects optimistic updates (visits added/deleted)
+  assignedKids: AssignedKid[]
+  localFriends: AssignedKid[]
+  servantName: string
   onBack: () => void
   onLogVisit: (assignmentId: string, date: string, notes?: string) => void
+  onDeleteVisit?: (visitId: string, assignmentId: string) => Promise<{ error: any }>
 }
-
-const SERVANT_NAME = 'George'
 
 export default function OutreachDetailScreen({
   assignedKid,
+  assignedKids,
+  localFriends,
+  servantName,
   onBack,
   onLogVisit,
+  onDeleteVisit,
 }: OutreachDetailScreenProps) {
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
-  const { student, assignment, visits } = assignedKid
+
+  // Derive live kid so visits update after log/delete without navigating back
+  const liveKid =
+    [...assignedKids, ...localFriends].find(k => k.assignment.id === assignedKid.assignment.id)
+    ?? assignedKid
+  const { student, assignment, visits } = liveKid
   const displayName = studentDisplayName(student)
-  const parentPhone = student.mother_phone || student.father_phone
-  const motherName = [student.mother_first_name, student.mother_last_name].filter(Boolean).join(' ')
-  const fatherName = [student.father_first_name, student.father_last_name].filter(Boolean).join(' ')
-  const parentName = motherName || fatherName || null
+
+  const motherPhone = student.mother_phone
+  const fatherPhone = student.father_phone
+  const primaryPhone = motherPhone || fatherPhone
+
+  const motherName = [student.mother_first_name, student.mother_last_name].filter(Boolean).join(' ') || null
+  const fatherName = [student.father_first_name, student.father_last_name].filter(Boolean).join(' ') || null
 
   const [modalVisible, setModalVisible] = useState(false)
-  const [visitDate, setVisitDate] = useState(todayString())
+  const [visitDate, setVisitDate] = useState(new Date())
+  const [showDatePicker, setShowDatePicker] = useState(false)
   const [visitNotes, setVisitNotes] = useState('')
 
   const initial = displayName.charAt(0).toUpperCase()
 
+  function handleCallMom() {
+    if (!motherPhone) { Alert.alert('No Phone', "No mother's phone on file."); return }
+    Linking.openURL(`tel:${motherPhone}`)
+  }
+
+  function handleCallDad() {
+    if (!fatherPhone) { Alert.alert('No Phone', "No father's phone on file."); return }
+    Linking.openURL(`tel:${fatherPhone}`)
+  }
+
   function handleCall() {
-    if (!parentPhone) {
-      Alert.alert('No Phone', 'No phone number on file.')
-      return
-    }
-    Linking.openURL(`tel:${parentPhone}`)
+    if (!primaryPhone) { Alert.alert('No Phone', 'No phone number on file.'); return }
+    Linking.openURL(`tel:${primaryPhone}`)
   }
 
   function handleMap() {
     const query = student.street || student.city
-    if (!query) {
-      Alert.alert('No Address', 'No address or city on file.')
-      return
-    }
+    if (!query) { Alert.alert('No Address', 'No address or city on file.'); return }
     const full = student.street && student.city ? `${student.street}, ${student.city}` : query
     Linking.openURL(`maps://?q=${encodeURIComponent(full)}`)
   }
 
   function handleMessage() {
-    if (!parentPhone) {
-      Alert.alert('No Phone', 'No phone number on file.')
-      return
-    }
-    const body = fillTemplate(DEFAULT_MESSAGE_TEMPLATE, displayName, SERVANT_NAME)
-    Linking.openURL(`sms:${parentPhone}&body=${encodeURIComponent(body)}`)
+    if (!primaryPhone) { Alert.alert('No Phone', 'No phone number on file.'); return }
+    const body = fillTemplate(DEFAULT_MESSAGE_TEMPLATE, displayName, servantName)
+    Linking.openURL(`sms:${primaryPhone}?body=${encodeURIComponent(body)}`)
   }
 
   function handleSaveVisit() {
-    if (!visitDate.trim()) return
-    onLogVisit(assignment.id, visitDate.trim(), visitNotes.trim() || undefined)
+    const dateStr = visitDate.toISOString().split('T')[0]
+    onLogVisit(assignment.id, dateStr, visitNotes.trim() || undefined)
     setModalVisible(false)
-    setVisitDate(todayString())
+    setVisitDate(new Date())
     setVisitNotes('')
   }
+
+  const hasBothPhones = !!(motherPhone && fatherPhone)
 
   return (
     <View style={styles.container}>
@@ -96,17 +117,51 @@ export default function OutreachDetailScreen({
           </View>
           <Text style={styles.infoName}>{displayName}</Text>
           <Text style={styles.infoGrade}>{assignment.gradeName}</Text>
-          {parentName && (
-            <Text style={styles.infoParent}>Parent: {parentName}</Text>
+
+          {/* Parents */}
+          {motherName && (
+            <View style={styles.parentRow}>
+              <Text style={styles.parentLabel}>Mother:</Text>
+              <Text style={styles.parentName}>{motherName}</Text>
+              {motherPhone && (
+                <TouchableOpacity onPress={handleCallMom} style={styles.parentCallBtn}>
+                  <Text style={styles.parentCallText}>{'📞'}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+          {fatherName && (
+            <View style={styles.parentRow}>
+              <Text style={styles.parentLabel}>Father:</Text>
+              <Text style={styles.parentName}>{fatherName}</Text>
+              {fatherPhone && (
+                <TouchableOpacity onPress={handleCallDad} style={styles.parentCallBtn}>
+                  <Text style={styles.parentCallText}>{'📞'}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           )}
         </View>
 
         {/* Contact Actions */}
         <View style={styles.contactRow}>
-          <TouchableOpacity style={styles.contactButton} onPress={handleCall}>
-            <Text style={styles.contactIcon}>{'📞'}</Text>
-            <Text style={styles.contactLabel}>Call</Text>
-          </TouchableOpacity>
+          {hasBothPhones ? (
+            <>
+              <TouchableOpacity style={styles.contactButton} onPress={handleCallMom}>
+                <Text style={styles.contactIcon}>{'📞'}</Text>
+                <Text style={styles.contactLabel}>Call Mom</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.contactButton} onPress={handleCallDad}>
+                <Text style={styles.contactIcon}>{'📞'}</Text>
+                <Text style={styles.contactLabel}>Call Dad</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <TouchableOpacity style={styles.contactButton} onPress={handleCall}>
+              <Text style={styles.contactIcon}>{'📞'}</Text>
+              <Text style={styles.contactLabel}>Call</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.contactButton} onPress={handleMap}>
             <Text style={styles.contactIcon}>{'📍'}</Text>
             <Text style={styles.contactLabel}>Map</Text>
@@ -124,12 +179,20 @@ export default function OutreachDetailScreen({
             <Text style={styles.noVisits}>No visits yet</Text>
           ) : (
             visits.map(visit => (
-              <View key={visit.id} style={styles.visitItem}>
-                <Text style={styles.visitDate}>{formatDate(visit.visitDate)}</Text>
-                {visit.notes ? (
-                  <Text style={styles.visitNotes}>{visit.notes}</Text>
-                ) : null}
-              </View>
+              <SwipeableVisitItem
+                key={visit.id}
+                visit={visit}
+                onDelete={onDeleteVisit ? () => {
+                  Alert.alert('Delete Visit', 'Remove this visit from history?', [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Delete',
+                      style: 'destructive',
+                      onPress: () => onDeleteVisit(visit.id, assignment.id),
+                    },
+                  ])
+                } : undefined}
+              />
             ))
           )}
         </View>
@@ -151,14 +214,38 @@ export default function OutreachDetailScreen({
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Log Visit</Text>
 
-            <Text style={styles.inputLabel}>Date (YYYY-MM-DD)</Text>
-            <TextInput
-              style={styles.input}
-              value={visitDate}
-              onChangeText={setVisitDate}
-              placeholder="2026-02-23"
-              placeholderTextColor={colors.textMuted}
-            />
+            {/* Date picker */}
+            <Text style={styles.inputLabel}>Date</Text>
+            <TouchableOpacity
+              style={styles.dateDisplayButton}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <Text style={styles.dateDisplayText}>{formatDate(visitDate.toISOString().split('T')[0])}</Text>
+            </TouchableOpacity>
+
+            {showDatePicker && (
+              <View style={styles.datePickerContainer}>
+                <DateTimePicker
+                  value={visitDate}
+                  mode="date"
+                  display="spinner"
+                  maximumDate={new Date()}
+                  onChange={(_, selected) => {
+                    if (selected) setVisitDate(selected)
+                    if (Platform.OS === 'android') setShowDatePicker(false)
+                  }}
+                  textColor={colors.textPrimary}
+                />
+                {Platform.OS === 'ios' && (
+                  <TouchableOpacity
+                    style={styles.datePickerDone}
+                    onPress={() => setShowDatePicker(false)}
+                  >
+                    <Text style={styles.datePickerDoneText}>Done</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
 
             <Text style={styles.inputLabel}>Notes (optional)</Text>
             <TextInput
@@ -176,7 +263,8 @@ export default function OutreachDetailScreen({
                 style={styles.cancelButton}
                 onPress={() => {
                   setModalVisible(false)
-                  setVisitDate(todayString())
+                  setShowDatePicker(false)
+                  setVisitDate(new Date())
                   setVisitNotes('')
                 }}
               >
@@ -193,9 +281,43 @@ export default function OutreachDetailScreen({
   )
 }
 
-function todayString(): string {
-  const d = new Date()
-  return d.toISOString().split('T')[0]
+function SwipeableVisitItem({
+  visit,
+  onDelete,
+}: {
+  visit: OutreachVisit
+  onDelete?: () => void
+}) {
+  const styles = useThemedStyles(createStyles)
+  const swipeRef = useRef<Swipeable>(null)
+
+  function renderRightActions() {
+    return (
+      <TouchableOpacity
+        style={styles.deleteAction}
+        onPress={() => {
+          swipeRef.current?.close()
+          onDelete?.()
+        }}
+      >
+        <Text style={styles.deleteActionText}>Delete</Text>
+      </TouchableOpacity>
+    )
+  }
+
+  return (
+    <Swipeable
+      ref={swipeRef}
+      renderRightActions={renderRightActions}
+      overshootRight={false}
+      containerStyle={styles.swipeContainer}
+    >
+      <View style={styles.visitItem}>
+        <Text style={styles.visitDate}>{formatDate(visit.visitDate)}</Text>
+        {visit.notes ? <Text style={styles.visitNotes}>{visit.notes}</Text> : null}
+      </View>
+    </Swipeable>
+  )
 }
 
 function formatDate(dateStr: string): string {
@@ -269,11 +391,30 @@ const createStyles = (colors: ThemeColors) => ({
     fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
+    marginBottom: 8,
   },
-  infoParent: {
-    fontSize: 14,
+  parentRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    marginTop: 6,
+    gap: 6,
+  },
+  parentLabel: {
+    fontSize: 13,
+    color: colors.textMuted,
+    fontWeight: '500' as const,
+    minWidth: 50,
+  },
+  parentName: {
+    fontSize: 13,
     color: colors.textSecondary,
-    marginTop: 8,
+    flex: 1,
+  },
+  parentCallBtn: {
+    padding: 2,
+  },
+  parentCallText: {
+    fontSize: 16,
   },
   contactRow: {
     flexDirection: 'row' as const,
@@ -313,13 +454,30 @@ const createStyles = (colors: ThemeColors) => ({
     color: colors.textMuted,
     fontStyle: 'italic' as const,
   },
+  swipeContainer: {
+    marginBottom: 10,
+    borderRadius: 10,
+    overflow: 'hidden' as const,
+  },
   visitItem: {
     backgroundColor: colors.card,
     borderRadius: 10,
     padding: 14,
-    marginBottom: 10,
     borderWidth: 1,
     borderColor: colors.borderLight,
+  },
+  deleteAction: {
+    backgroundColor: '#f44336',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    marginLeft: 8,
+  },
+  deleteActionText: {
+    color: '#fff',
+    fontWeight: '600' as const,
+    fontSize: 14,
   },
   visitDate: {
     fontSize: 14,
@@ -376,6 +534,29 @@ const createStyles = (colors: ThemeColors) => ({
     fontWeight: '500' as const,
     color: colors.textSecondary,
     marginBottom: 6,
+  },
+  dateDisplayButton: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+  },
+  dateDisplayText: {
+    fontSize: 16,
+    color: colors.textPrimary,
+  },
+  datePickerContainer: {
+    marginBottom: 12,
+  },
+  datePickerDone: {
+    alignItems: 'flex-end' as const,
+    padding: 8,
+  },
+  datePickerDoneText: {
+    fontSize: 16,
+    color: colors.primary,
+    fontWeight: '600' as const,
   },
   input: {
     borderWidth: 1,
