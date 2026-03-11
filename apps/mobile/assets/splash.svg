@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1284 2778" width="1284" height="2778">
+  <!-- Background -->
+  <rect width="1284" height="2778" fill="#007AFF"/>
+
+  <!--
+    Same 3×3 grid logic as the icon, scaled to ~560px total mark size.
+    Cross bar thickness: 112px
+    Cross span: 560px (280 each side from center)
+    Corner dot radius: 38px
+    Gap between dot edge and nearest bar: ~24px
+
+    Center of mark: (642, 1080)
+  -->
+  <g transform="translate(642, 1080)">
+    <!-- Cross -->
+    <rect x="-56"  y="-280" width="112" height="560" rx="26" fill="white"/>
+    <rect x="-280" y="-56"  width="560" height="112" rx="26" fill="white"/>
+
+    <!-- Corner dots -->
+    <!-- top-left quadrant center: roughly (-168, -168) -->
+    <circle cx="-175" cy="-175" r="38" fill="white" opacity="0.45"/>
+    <!-- top-right -->
+    <circle cx="175"  cy="-175" r="38" fill="white" opacity="0.45"/>
+    <!-- bottom-left -->
+    <circle cx="-175" cy="175"  r="38" fill="white" opacity="0.45"/>
+    <!-- bottom-right -->
+    <circle cx="175"  cy="175"  r="38" fill="white" opacity="0.45"/>
+  </g>
+
+  <!-- App name -->
+  <text
+    x="642"
+    y="1500"
+    font-family="-apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif"
+    font-size="88"
+    font-weight="700"
+    fill="white"
+    text-anchor="middle"
+    letter-spacing="-1"
+  >MinistryHub</text>
+</svg>
