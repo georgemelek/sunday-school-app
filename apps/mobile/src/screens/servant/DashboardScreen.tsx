@@ -16,6 +16,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useTour } from '../../contexts/TourContext'
 import { CURRENT_USER } from '../../data/mockData'
 import { SessionCard } from '../../components/SessionCard'
+import { logger } from '../../lib/logger'
 
 interface DashboardScreenProps {
   onNavigateToGrades?: () => void
@@ -53,6 +54,7 @@ export default function DashboardScreen({
 
   const loading = classesQuery.isLoading || sessionsQuery.isLoading || availQuery.isLoading
   const isRefreshing = classesQuery.isFetching || sessionsQuery.isFetching || availQuery.isFetching
+  const hasError = classesQuery.isError || sessionsQuery.isError || availQuery.isError
 
   const greeting = getGreeting()
   const firstName = profile?.full_name?.split(' ')[0] ?? CURRENT_USER.fullName.split(' ')[0]
@@ -104,8 +106,9 @@ export default function DashboardScreen({
   const alertWindow = getUpcomingSessions(14)
 
   // Check if user is unavailable for any upcoming date (14-day window)
+  const currentUserId = isTourMode ? CURRENT_USER.id : (profileId ?? '')
   const myUpcomingUnavailable = alertWindow.filter(
-    s => !isServantAvailable(CURRENT_USER.id, s.date)
+    s => !isServantAvailable(currentUserId, s.date)
   )
 
   // Find dates with thin staffing (<=3 available) — consolidate into one alert (14-day window)
@@ -132,6 +135,9 @@ export default function DashboardScreen({
   }
 
   function renderHeader() {
+    if (hasError) {
+      logger.error('DashboardScreen.load', { classes: classesQuery.error, sessions: sessionsQuery.error, avail: availQuery.error })
+    }
     return (
       <View>
         {/* Greeting */}
@@ -139,6 +145,13 @@ export default function DashboardScreen({
           <Text style={styles.greeting}>{greeting}, {firstName}</Text>
           <Text style={styles.dateText}>{formatTodayDate()}</Text>
         </View>
+
+        {/* Error banner */}
+        {hasError && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>Could not load all data. Pull down to retry.</Text>
+          </View>
+        )}
 
         {/* Alerts */}
         {renderAlerts()}
@@ -369,6 +382,21 @@ const createStyles = (colors: ThemeColors) => ({
     flex: 1,
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
+  },
+
+  // Error banner
+  errorBanner: {
+    backgroundColor: colors.alertDangerBg,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.error,
+  },
+  errorBannerText: {
+    fontSize: 13,
+    color: colors.error,
+    textAlign: 'center' as const,
   },
 
   // Greeting

@@ -8,13 +8,15 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native'
+import { useQueryClient } from '@tanstack/react-query'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useAvailability } from '../../hooks/useAvailability'
-import { useSessions, Session } from '../../hooks/useSessions'
-import { useClasses } from '../../hooks/useClasses'
+import { useClassesQuery, useSessionsQuery, useAvailabilityQuery, dashboardKeys } from '../../queries/dashboardQueries'
+import type { Session } from '../../hooks/useSessions'
 import { useAuth } from '../../contexts/AuthContext'
 import { useTour } from '../../contexts/TourContext'
 import { CURRENT_USER } from '../../data/mockData'
+import { logger } from '../../lib/logger'
 
 interface AvailabilityScreenProps {
   onBack?: () => void
@@ -35,26 +37,38 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
   const { colors } = useTheme()
   const { profile } = useAuth()
   const { isTourMode } = useTour()
-  // In tour mode use the mock user ID for filtering mock data; in real mode use profile UUID
-  const currentUserId = isTourMode ? CURRENT_USER.id : (profile?.id ?? '')
+  const queryClient = useQueryClient()
 
-  const {
-    loading: availLoading,
-    refetch: refetchAvail,
-    toggleAvailability,
-    isServantAvailable,
-    availability,
-  } = useAvailability(isTourMode ? CURRENT_USER.id : undefined)
+  const profileId = profile?.id
+  const currentUserId = isTourMode ? CURRENT_USER.id : (profileId ?? '')
 
-  const { classes, classTypes, loading: classesLoading, refetch: refetchClasses, getClassById } = useClasses()
-  const classIds = classes.map(c => c.id)
-  // Only pass classIds after classes have loaded — prevents premature empty fetch
-  const { sessions, loading: sessionsLoading, refetch: refetchSessions } = useSessions(
-    undefined,
-    classesLoading ? undefined : classIds.length > 0 ? classIds : undefined,
+  // Availability toggle still uses the old hook (it has the toggleAvailability mutation)
+  const { toggleAvailability, isServantAvailable } = useAvailability(
+    isTourMode ? CURRENT_USER.id : undefined
   )
 
-  const loading = availLoading || sessionsLoading || classesLoading
+  // Read data via React Query (shared cache with Dashboard — no extra fetches on tab switch)
+  const classesQuery = useClassesQuery(profileId, isTourMode)
+  const { classes = [], classTypes = [] } = classesQuery.data ?? {}
+  const classIds = classes.map(c => c.id)
+  const classesLoaded = !classesQuery.isLoading
+
+  const sessionsQuery = useSessionsQuery(
+    classIds,
+    classesLoaded && classIds.length > 0,
+    isTourMode,
+  )
+  const sessions = sessionsQuery.data ?? []
+
+  const availQuery = useAvailabilityQuery(profileId, isTourMode)
+
+  const loading = classesQuery.isLoading || sessionsQuery.isLoading || availQuery.isLoading
+  const isRefreshing = classesQuery.isFetching || sessionsQuery.isFetching || availQuery.isFetching
+  const hasError = classesQuery.isError || sessionsQuery.isError || availQuery.isError
+
+  function handleRefresh() {
+    queryClient.invalidateQueries({ queryKey: dashboardKeys.all })
+  }
 
   // Build date groups: next 30 days, only dates with scheduled sessions
   const dateGroups = useMemo(() => {
@@ -65,77 +79,61 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
     const todayStr = today.toISOString().split('T')[0]
     const endStr = end.toISOString().split('T')[0]
 
-    // Get upcoming scheduled sessions
     const upcoming = sessions.filter(
       s => s.date >= todayStr && s.date <= endStr && s.status === 'scheduled'
     )
 
-    // Group by date
     const grouped: Record<string, Session[]> = {}
     for (const session of upcoming) {
-      if (!grouped[session.date]) {
-        grouped[session.date] = []
-      }
+      if (!grouped[session.date]) grouped[session.date] = []
       grouped[session.date].push(session)
     }
 
-    // Build date groups with labels
-    const result: DateGroup[] = Object.keys(grouped)
+    return Object.keys(grouped)
       .sort()
       .map(date => {
         const sessionInfos = grouped[date].map(s => {
-          const cls = getClassById(s.classId)
-          const classType = cls
-            ? classTypes.find(ct => ct.id === cls.classTypeId)
-            : undefined
+          const cls = classes.find(c => c.id === s.classId)
+          const classType = cls ? classTypes.find(ct => ct.id === cls.classTypeId) : undefined
           return {
             id: s.id,
             className: cls?.name || 'Unknown Class',
             classTypeName: classType?.name || '',
           }
         })
-
-        return {
-          date,
-          label: formatDateLabel(date),
-          sessions: sessionInfos,
-        }
+        return { date, label: formatDateLabel(date), sessions: sessionInfos }
       })
+  }, [sessions, classes, classTypes])
 
-    return result
-  }, [sessions, classes, classTypes, getClassById])
-
-  // Count unavailable dates
   const unavailableCount = useMemo(() => {
     return dateGroups.filter(g => !isServantAvailable(currentUserId, g.date)).length
-  }, [dateGroups, isServantAvailable])
+  }, [dateGroups, isServantAvailable, currentUserId])
 
-  function handleRefresh() {
-    refetchAvail()
-    refetchSessions()
-    refetchClasses()
-  }
-
-  function handleToggle(date: string, dateLabel: string) {
+  async function handleToggle(date: string, dateLabel: string) {
     const currentlyAvailable = isServantAvailable(currentUserId, date)
 
+    const doToggle = async () => {
+      const result = await toggleAvailability(currentUserId, date)
+      if (result?.error) {
+        logger.error('AvailabilityScreen.toggle', result.error)
+        Alert.alert('Could not update availability', 'Please try again.')
+      } else {
+        // Invalidate so Dashboard availability alert reflects the change
+        queryClient.invalidateQueries({ queryKey: dashboardKeys.all })
+      }
+    }
+
     if (currentlyAvailable) {
-      // Marking unavailable — show confirmation
       Alert.alert(
         'Mark Unavailable',
         `Mark yourself unavailable for ${dateLabel}? This affects all your sessions on that date.`,
         [
           { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Mark Unavailable',
-            style: 'destructive',
-            onPress: () => toggleAvailability(currentUserId, date),
-          },
+          { text: 'Mark Unavailable', style: 'destructive', onPress: doToggle },
         ]
       )
     } else {
-      // Marking available — no confirmation needed
-      toggleAvailability(currentUserId, date)
+      doToggle()
     }
   }
 
@@ -159,7 +157,6 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         {onBack && (
           <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -173,10 +170,15 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={handleRefresh} tintColor={colors.primary} />
+          <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={colors.primary} />
         }
       >
-        {/* Summary banner */}
+        {hasError && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorBannerText}>Could not load schedule. Pull down to retry.</Text>
+          </View>
+        )}
+
         <View style={styles.summaryBanner}>
           <Text style={styles.summaryText}>
             {unavailableCount === 0
@@ -185,7 +187,6 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
           </Text>
         </View>
 
-        {/* Date list */}
         {dateGroups.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>No upcoming sessions</Text>
@@ -198,7 +199,6 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
             return (
               <View key={group.date} style={styles.dateCard}>
                 <View style={styles.dateCardContent}>
-                  {/* Date and sessions */}
                   <View style={styles.dateInfo}>
                     <Text style={styles.dateLabel}>{group.label}</Text>
                     {group.sessions.map(s => (
@@ -208,7 +208,6 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
                     ))}
                   </View>
 
-                  {/* Toggle button */}
                   <TouchableOpacity
                     style={[
                       styles.toggleButton,
@@ -288,6 +287,21 @@ const createStyles = (colors: ThemeColors) => ({
   },
   scrollContent: {
     padding: 16,
+  },
+
+  // Error banner
+  errorBanner: {
+    backgroundColor: colors.alertDangerBg,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: colors.error,
+  },
+  errorBannerText: {
+    fontSize: 13,
+    color: colors.error,
+    textAlign: 'center' as const,
   },
 
   // Summary banner
