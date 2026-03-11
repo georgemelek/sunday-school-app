@@ -12,6 +12,7 @@ import { Swipeable } from 'react-native-gesture-handler'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useGrades, GradeWithStats } from '../../hooks/useGrades'
 import { GradeCard } from '../../components/GradeCard'
+import { logger } from '../../lib/logger'
 
 interface MyGradesScreenProps {
   onGradePress?: (gradeId: string, gradeName: string) => void
@@ -43,7 +44,10 @@ export default function MyGradesScreen({ onGradePress, onBack, onStartOnboarding
           style: 'destructive',
           onPress: async () => {
             const { error } = await deleteGrade(grade.id)
-            if (error) Alert.alert('Error', error)
+            if (error) {
+              logger.error('MyGradesScreen.deleteGrade', error)
+              Alert.alert('Could not remove grade', 'Please try again.')
+            }
           },
         },
       ]
@@ -65,16 +69,19 @@ export default function MyGradesScreen({ onGradePress, onBack, onStartOnboarding
     </View>
   )
 
-  const renderError = () => (
-    <View style={styles.errorState}>
-      <Text style={styles.errorIcon}>⚠️</Text>
-      <Text style={styles.errorTitle}>Error Loading Grades</Text>
-      <Text style={styles.errorText}>{error}</Text>
-      <TouchableOpacity style={styles.setupButton} onPress={refetch}>
-        <Text style={styles.setupButtonText}>Try Again</Text>
-      </TouchableOpacity>
-    </View>
-  )
+  const renderError = () => {
+    logger.error('MyGradesScreen.loadGrades', error)
+    return (
+      <View style={styles.errorState}>
+        <Text style={styles.errorIcon}>⚠️</Text>
+        <Text style={styles.errorTitle}>Could not load grades</Text>
+        <Text style={styles.errorText}>Something went wrong. Please try again.</Text>
+        <TouchableOpacity style={styles.setupButton} onPress={refetch}>
+          <Text style={styles.setupButtonText}>Try Again</Text>
+        </TouchableOpacity>
+      </View>
+    )
+  }
 
   return (
     <View style={styles.container}>

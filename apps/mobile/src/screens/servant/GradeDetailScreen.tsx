@@ -13,6 +13,7 @@ import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useStudents, studentDisplayName } from '../../hooks/useStudents'
 import { StudentListItem } from '../../components/StudentListItem'
 import AttendanceHistoryView from '../../components/AttendanceHistoryView'
+import { logger } from '../../lib/logger'
 
 type Tab = 'students' | 'attendance'
 
@@ -66,7 +67,8 @@ export default function GradeDetailScreen({
           onPress: async () => {
             const { error } = await deleteStudent(studentId)
             if (error) {
-              Alert.alert('Error', error)
+              logger.error('GradeDetailScreen.deleteStudent', error)
+              Alert.alert('Could not remove student', 'Please try again.')
             }
           },
         },

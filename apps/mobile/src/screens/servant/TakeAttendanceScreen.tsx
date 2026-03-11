@@ -11,6 +11,7 @@ import {
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useStudents, Student, studentDisplayName } from '../../hooks/useStudents'
 import { useAttendance, AttendanceEntry } from '../../hooks/useAttendance'
+import { logger } from '../../lib/logger'
 
 interface TakeAttendanceScreenProps {
   gradeId: string
@@ -120,7 +121,8 @@ export default function TakeAttendanceScreen({
     setSubmitting(false)
 
     if (error) {
-      Alert.alert('Error', error)
+      logger.error('TakeAttendanceScreen.submit', error)
+      Alert.alert('Could not save attendance', 'Please try again.')
     } else {
       Alert.alert(
         'Attendance Recorded',

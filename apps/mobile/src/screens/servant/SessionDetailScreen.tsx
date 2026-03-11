@@ -13,6 +13,7 @@ import {
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { Session } from '../../hooks/useSessions'
 import { useClasses } from '../../hooks/useClasses'
+import { logger } from '../../lib/logger'
 import { useAvailability } from '../../hooks/useAvailability'
 import { CURRENT_USER, MOCK_CLASS_TYPES } from '../../data/mockData'
 
@@ -112,7 +113,10 @@ export default function SessionDetailScreen({
           style: 'destructive',
           onPress: async (reason: string | undefined) => {
             const { error } = await onCancelSession(session.id, reason ?? '')
-            if (error) Alert.alert('Error', error)
+            if (error) {
+              logger.error('SessionDetailScreen.cancelSession', error)
+              Alert.alert('Could not cancel session', 'Please try again.')
+            }
           },
         },
       ],
@@ -126,7 +130,8 @@ export default function SessionDetailScreen({
     const { error } = await onUpdateLessonTopic(session.id, topicDraft)
     setSavingTopic(false)
     if (error) {
-      Alert.alert('Error', error)
+      logger.error('SessionDetailScreen.updateLessonTopic', error)
+      Alert.alert('Could not update topic', 'Please try again.')
     } else {
       setEditingTopic(false)
     }

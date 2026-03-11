@@ -13,6 +13,7 @@ import {
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useOutreachManagement, PHANTOM_SERVANT_ID } from '../../hooks/useOutreach'
 import { studentDisplayName } from '../../hooks/useStudents'
+import { logger } from '../../lib/logger'
 import type { ManageServant, AssignableKid, AssignedKid } from '../../hooks/useOutreach'
 import type { Student } from '../../hooks/useStudents'
 
@@ -213,7 +214,10 @@ export default function OutreachManageScreen({ onBack }: OutreachManageScreenPro
       clearSelection()
 
       const err = results.find(r => r.error)?.error
-      if (err) Alert.alert('Error', err.message || 'Something went wrong')
+      if (err) {
+        logger.error('OutreachManageScreen.bulkAssign', err)
+        Alert.alert('Could not reassign kids', 'Please try again.')
+      }
     } else {
       if (pendingAssignmentId) {
         reassignKid(pendingAssignmentId, servant.id)

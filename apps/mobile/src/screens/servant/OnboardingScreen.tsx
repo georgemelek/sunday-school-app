@@ -19,6 +19,7 @@ import { supabase } from '../../lib/supabase'
 import { TABLES } from '../../lib/tables'
 import { useAuth } from '../../contexts/AuthContext'
 import ImportStudentsScreen from './ImportStudentsScreen'
+import { logger } from '../../lib/logger'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -423,7 +424,8 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
       setSavedGradeIds(savedGrades)
       setStep(2)
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Something went wrong. Please try again.')
+      logger.error('OnboardingScreen.handleFinish', err)
+      Alert.alert('Could not save setup', 'Something went wrong. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -883,7 +885,8 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
       const { error } = await supabase.from(TABLES.OUTREACH_ASSIGNMENTS).insert(rows)
       if (error) throw error
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to save assignments.')
+      logger.error('OnboardingScreen.handleFinishAssignKids', err)
+      Alert.alert('Could not save assignments', 'Please try again.')
     } finally {
       setSaving(false)
     }

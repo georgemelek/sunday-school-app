@@ -10,6 +10,7 @@ import {
 } from 'react-native'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { Student, StudentFormData, EMPTY_FORM } from '../../hooks/useStudents'
+import { logger } from '../../lib/logger'
 
 interface StudentFormScreenProps {
   mode: 'add' | 'edit'
@@ -91,7 +92,8 @@ export default function StudentFormScreen({
     const { error } = await onSave(formData)
     setSaving(false)
     if (error) {
-      Alert.alert('Error', error)
+      logger.error('StudentFormScreen.save', error)
+      Alert.alert('Could not save student', 'Please try again.')
     } else {
       Alert.alert(
         'Success',

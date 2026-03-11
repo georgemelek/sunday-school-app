@@ -13,6 +13,7 @@ import { File } from 'expo-file-system'
 import Papa from 'papaparse'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useStudents, studentDisplayName, StudentFormData } from '../../hooks/useStudents'
+import { logger } from '../../lib/logger'
 import {
   downloadCsvTemplate,
   csvRowToFormData,
@@ -57,7 +58,8 @@ export default function ImportStudentsScreen({
     try {
       await downloadCsvTemplate()
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Could not share template.')
+      logger.error('ImportStudentsScreen.downloadTemplate', err)
+      Alert.alert('Could not download template', 'Please try again.')
     } finally {
       setDownloadingTemplate(false)
     }
@@ -105,7 +107,8 @@ export default function ImportStudentsScreen({
       setRows(importRows)
       setImportState('preview')
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to read file.')
+      logger.error('ImportStudentsScreen.pickFile', err)
+      Alert.alert('Could not read file', 'Please try again.')
       setImportState('idle')
     }
   }
@@ -120,7 +123,8 @@ export default function ImportStudentsScreen({
     for (const row of validRows) {
       const { error } = await addStudent(row.data)
       if (error) {
-        failures.push(`${studentDisplayName(row.data)}: ${error}`)
+        logger.error('ImportStudentsScreen.import', `${studentDisplayName(row.data)}: ${error}`)
+        failures.push(studentDisplayName(row.data))
       } else {
         count++
       }
@@ -131,8 +135,8 @@ export default function ImportStudentsScreen({
 
     if (failures.length > 0) {
       Alert.alert(
-        'Some rows failed',
-        failures.slice(0, 5).join('\n') + (failures.length > 5 ? `\n…and ${failures.length - 5} more` : '')
+        'Some students could not be imported',
+        `${failures.slice(0, 5).join(', ')}${failures.length > 5 ? ` and ${failures.length - 5} more` : ''}. Check the console for details.`
       )
     }
   }
