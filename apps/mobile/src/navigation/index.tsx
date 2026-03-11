@@ -42,6 +42,7 @@ import SessionDetailScreen from '../screens/servant/SessionDetailScreen'
 import AvailabilityScreen from '../screens/servant/AvailabilityScreen'
 import OutreachScreen from '../screens/servant/OutreachScreen'
 import OutreachDetailScreen from '../screens/servant/OutreachDetailScreen'
+import OutreachManageScreen from '../screens/servant/OutreachManageScreen'
 import { useOutreach } from '../hooks/useOutreach'
 import { useSessions } from '../hooks/useSessions'
 
@@ -245,7 +246,9 @@ function AvailabilityStackNavigator() {
 // --- Outreach Tab Stack ---
 
 function OutreachStackNavigator() {
-  const { assignedKids, loading, refetch, logVisit } = useOutreach()
+  const { assignedKids, localFriends, gradeOverview, loading, refetch, logVisit, deleteVisit } = useOutreach()
+  const { profile } = useAuth()
+  const servantName = profile?.full_name ?? 'Servant'
 
   return (
     <OutreachStack.Navigator screenOptions={{ headerShown: false }}>
@@ -253,11 +256,15 @@ function OutreachStackNavigator() {
         {({ navigation }) => (
           <OutreachScreen
             assignedKids={assignedKids}
+            localFriends={localFriends}
+            gradeOverview={gradeOverview}
+            servantName={servantName}
             loading={loading}
             refetch={refetch}
             onKidPress={(assignedKid) =>
               navigation.navigate('OutreachDetail', { assignedKid })
             }
+            onManagePress={() => navigation.navigate('OutreachManage')}
           />
         )}
       </OutreachStack.Screen>
@@ -266,12 +273,22 @@ function OutreachStackNavigator() {
         {({ navigation, route }) => (
           <OutreachDetailScreen
             assignedKid={route.params.assignedKid}
+            assignedKids={assignedKids}
+            localFriends={localFriends}
+            servantName={servantName}
             onBack={() => navigation.goBack()}
             onLogVisit={async (assignmentId, date, notes) => {
               await logVisit(assignmentId, date, notes)
               navigation.goBack()
             }}
+            onDeleteVisit={deleteVisit}
           />
+        )}
+      </OutreachStack.Screen>
+
+      <OutreachStack.Screen name="OutreachManage">
+        {({ navigation }) => (
+          <OutreachManageScreen onBack={() => navigation.goBack()} />
         )}
       </OutreachStack.Screen>
     </OutreachStack.Navigator>
