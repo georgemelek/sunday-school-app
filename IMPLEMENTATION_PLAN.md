@@ -103,8 +103,17 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 - [x] **S.9**: Attendance — batch insert (upsert on student_id+date), history queries; tour mode uses mock data like useStudents pattern
 - [x] **S.10**: Classes & sessions — CRUD for servant-created classes, session list read; tour mode uses mock data
 - [x] **S.11**: Availability — upsert, date range queries, coverage calculations; tour mode uses mock data
-- [ ] **S.12**: Outreach — assignments, visit logging, progress queries; tour mode uses mock data
-- [ ] **S.13**: Real-time subscriptions — attendance, availability, session changes
+- [x] **S.12**: Outreach — assignments, visit logging, progress queries; tour mode uses mock data
+- [ ] **S.13**: Real-time subscriptions — attendance, availability, session changes *(deferred — low priority pre-launch; React Query stale-while-revalidate covers the UX need)*
+
+### React Query migration
+- [x] Dashboard — useClassesQuery, useSessionsQuery, useAvailabilityQuery with 5-min staleTime
+- [x] AvailabilityScreen — shares same React Query cache as Dashboard (no extra fetches on tab switch)
+- [ ] Other screens (MyGrades, Outreach, Attendance) — defer to post-launch; none have the tab-switch refetch problem
+
+### Error handling
+- [x] `src/lib/logger.ts` — centralised logger; all Supabase errors logged to console, never shown raw to users
+- [x] All servant screens show generic friendly Alerts; full errors in Metro console
 
 ---
 
