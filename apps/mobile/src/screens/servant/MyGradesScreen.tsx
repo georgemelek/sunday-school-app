@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native'
+import { Swipeable } from 'react-native-gesture-handler'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useGrades, GradeWithStats } from '../../hooks/useGrades'
 import { GradeCard } from '../../components/GradeCard'
@@ -109,21 +110,11 @@ export default function MyGradesScreen({ onGradePress, onBack, onStartOnboarding
           data={grades}
           keyExtractor={item => item.id}
           renderItem={({ item }) => (
-            <View style={styles.gradeRow}>
-              <View style={styles.gradeCardWrap}>
-                <GradeCard
-                  grade={item}
-                  onPress={() => handleGradePress(item.id, item.name)}
-                />
-              </View>
-              <TouchableOpacity
-                style={styles.deleteButton}
-                onPress={() => handleDeleteGrade(item)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Text style={styles.deleteIcon}>🗑</Text>
-              </TouchableOpacity>
-            </View>
+            <SwipeableGradeRow
+              grade={item}
+              onPress={() => handleGradePress(item.id, item.name)}
+              onDelete={() => handleDeleteGrade(item)}
+            />
           )}
           contentContainerStyle={grades.length === 0 ? styles.emptyListContainer : styles.listContainer}
           ListEmptyComponent={renderEmptyState}
@@ -133,6 +124,40 @@ export default function MyGradesScreen({ onGradePress, onBack, onStartOnboarding
         />
       )}
     </View>
+  )
+}
+
+function SwipeableGradeRow({
+  grade,
+  onPress,
+  onDelete,
+}: {
+  grade: GradeWithStats
+  onPress: () => void
+  onDelete: () => void
+}) {
+  const styles = useThemedStyles(createStyles)
+  const swipeRef = useRef<Swipeable>(null)
+
+  return (
+    <Swipeable
+      ref={swipeRef}
+      renderRightActions={() => (
+        <TouchableOpacity
+          style={styles.deleteAction}
+          onPress={() => {
+            swipeRef.current?.close()
+            onDelete()
+          }}
+        >
+          <Text style={styles.deleteActionText}>Remove</Text>
+        </TouchableOpacity>
+      )}
+      overshootRight={false}
+      containerStyle={styles.swipeContainer}
+    >
+      <GradeCard grade={grade} onPress={onPress} />
+    </Swipeable>
   )
 }
 
@@ -181,21 +206,24 @@ const createStyles = (colors: ThemeColors) => ({
     fontSize: 13,
     fontWeight: '600' as const,
   },
-  gradeRow: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
+  swipeContainer: {
     paddingHorizontal: 16,
     paddingTop: 8,
   },
-  gradeCardWrap: {
-    flex: 1,
+  deleteAction: {
+    backgroundColor: '#f44336',
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginLeft: 8,
+    marginTop: 8,
+    marginBottom: 12,
   },
-  deleteButton: {
-    padding: 12,
-    marginLeft: 4,
-  },
-  deleteIcon: {
-    fontSize: 20,
+  deleteActionText: {
+    color: '#fff',
+    fontWeight: '600' as const,
+    fontSize: 14,
   },
   listContainer: {
     paddingVertical: 8,
