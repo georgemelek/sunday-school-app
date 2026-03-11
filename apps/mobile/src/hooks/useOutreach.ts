@@ -549,14 +549,13 @@ export function useOutreachManagement() {
       }
 
       // Collect kids in the "other servants not on app" bucket (status = 'other_servant')
-      const phantomKids: AssignableKid[] = otherServantAssigns
-        .map(r => {
-          const student = allStudents.find(s => s.id === r.student_id)
-          if (!student || !r.student_id) return null
-          assignedStudentIds.add(r.student_id)
-          return { student, assignment: rowToAssignment(r, '') }
-        })
-        .filter((k): k is AssignableKid => k !== null)
+      const phantomKids: AssignableKid[] = []
+      for (const r of otherServantAssigns) {
+        const student = allStudents.find(s => s.id === r.student_id)
+        if (!student || !r.student_id) continue
+        assignedStudentIds.add(r.student_id)
+        phantomKids.push({ student, assignment: rowToAssignment(r, '') })
+      }
 
       const builtServants: ManageServant[] = [
         ...Array.from(servantMap.values()).map(sv => ({
