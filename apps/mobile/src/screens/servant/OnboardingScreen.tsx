@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  FlatList,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native'
@@ -417,10 +418,10 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
         }
       }
 
-      // Advance to step 4 (import students) with the real grade IDs
+      // Advance to step 2 (confirmation) with the real grade IDs
       const savedGrades = grades.map(g => ({ id: gradeIdMap[g.id], name: g.name.trim() }))
       setSavedGradeIds(savedGrades)
-      setStep(3)
+      setStep(2)
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Something went wrong. Please try again.')
     } finally {
@@ -737,7 +738,7 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
   }
 
 
-  // ── Step 3 (post-save): Confirmation ─────────────────────────────────────────
+  // ── Step 2 (post-save): Confirmation ─────────────────────────────────────────
 
   function renderConfirmation() {
     const sessionCount = classes
@@ -753,15 +754,13 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
           {sessionCount > 0 ? ` ${sessionCount} sessions have been automatically scheduled on your dashboard.` : ''}
         </Text>
 
-        <TouchableOpacity style={styles.confirmationPrimaryButton} onPress={() => setStep(4)}>
-          <Text style={styles.confirmationPrimaryButtonText}>Add Students (optional) →</Text>
+        <TouchableOpacity style={styles.confirmationPrimaryButton} onPress={() => setStep(3)}>
+          <Text style={styles.confirmationPrimaryButtonText}>Assign Kids →</Text>
         </TouchableOpacity>
 
-        {onGoToAvailability && (
-          <TouchableOpacity style={styles.confirmationSecondaryButton} onPress={onGoToAvailability}>
-            <Text style={styles.confirmationSecondaryButtonText}>Set My Availability</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.confirmationSecondaryButton} onPress={() => setStep(4)}>
+          <Text style={styles.confirmationSecondaryButtonText}>Skip to Add Students</Text>
+        </TouchableOpacity>
 
         <TouchableOpacity style={styles.confirmationSecondaryButton} onPress={onComplete}>
           <Text style={styles.confirmationSecondaryButtonText}>Go to Dashboard</Text>
@@ -771,6 +770,203 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
   }
 
   // ── Step 4: Import students ──────────────────────────────────────────────────
+
+  // ── Step 3: Assign Kids ──────────────────────────────────────────────────────
+
+  interface OnboardingStudent {
+    id: string
+    first_name: string | null
+    last_name: string | null
+    gender: string | null
+    grade_id: string | null
+  }
+
+  interface OnboardingServant {
+    id: string
+    full_name: string
+    gender: string | null
+  }
+
+  const [outreachStudents, setOutreachStudents] = useState<OnboardingStudent[]>([])
+  const [outreachServants, setOutreachServants] = useState<OnboardingServant[]>([])
+  const [outreachAssignments, setOutreachAssignments] = useState<{ studentId: string; servantId: string }[]>([])
+  const [outreachGender, setOutreachGender] = useState<'male' | 'female'>('male')
+  const [loadingOutreach, setLoadingOutreach] = useState(false)
+
+  useEffect(() => {
+    if (step === 3 && savedGradeIds.length > 0) {
+      fetchOutreachData()
+    }
+  }, [step])
+
+  async function fetchOutreachData() {
+    if (!profile) return
+    setLoadingOutreach(true)
+    try {
+      const gradeIds = savedGradeIds.map(g => g.id)
+
+      const { data: studentRows } = await supabase
+        .from(TABLES.STUDENTS)
+        .select('id, first_name, last_name, gender, grade_id')
+        .in('grade_id', gradeIds)
+
+      type SgWithProfile = {
+        servant_id: string | null
+        profiles: { id: string; full_name: string | null; gender: string | null } | null
+      }
+
+      const { data: sgRows } = await supabase
+        .from(TABLES.SERVANT_GRADES)
+        .select('servant_id, profiles!servant_id(id, full_name, gender)')
+        .in('grade_id', gradeIds)
+
+      setOutreachStudents(studentRows ?? [])
+
+      const typedSgRows = (sgRows ?? []) as SgWithProfile[]
+      const servantMap = new Map<string, OnboardingServant>()
+      for (const r of typedSgRows) {
+        const p = r.profiles
+        if (p?.id && !servantMap.has(p.id)) {
+          servantMap.set(p.id, { id: p.id, full_name: p.full_name ?? '', gender: p.gender ?? null })
+        }
+      }
+      setOutreachServants(Array.from(servantMap.values()))
+    } catch {
+      // non-fatal — servant can skip
+    } finally {
+      setLoadingOutreach(false)
+    }
+  }
+
+  function getAssignedServantId(studentId: string): string | undefined {
+    return outreachAssignments.find(a => a.studentId === studentId)?.servantId
+  }
+
+  function assignStudentInOnboarding(studentId: string, servantId: string) {
+    setOutreachAssignments(prev => {
+      const filtered = prev.filter(a => a.studentId !== studentId)
+      return servantId ? [...filtered, { studentId, servantId }] : filtered
+    })
+  }
+
+  function autoAssignOnboarding() {
+    const genderStudents = outreachStudents.filter(s => s.gender === outreachGender)
+    const genderServants = outreachServants.filter(sv => sv.gender === outreachGender)
+    if (!genderStudents.length || !genderServants.length) return
+
+    const unassigned = genderStudents.filter(s => !getAssignedServantId(s.id))
+    if (!unassigned.length) return
+
+    const counts = new Map(genderServants.map(sv => [sv.id, outreachAssignments.filter(a => a.servantId === sv.id).length]))
+    const sorted = [...genderServants].sort((a, b) => (counts.get(a.id) ?? 0) - (counts.get(b.id) ?? 0))
+
+    const newAssigns = unassigned.map((student, i) => ({
+      studentId: student.id,
+      servantId: sorted[i % sorted.length].id,
+    }))
+    setOutreachAssignments(prev => [...prev, ...newAssigns])
+  }
+
+  async function handleFinishAssignKids() {
+    if (outreachAssignments.length === 0) {
+      setStep(4)
+      return
+    }
+
+    setSaving(true)
+    try {
+      const rows = outreachAssignments.map(a => ({
+        student_id: a.studentId,
+        servant_id: a.servantId,
+        status: 'active',
+      }))
+      const { error } = await supabase.from(TABLES.OUTREACH_ASSIGNMENTS).insert(rows)
+      if (error) throw error
+    } catch (err: any) {
+      Alert.alert('Error', err.message || 'Failed to save assignments.')
+    } finally {
+      setSaving(false)
+    }
+    setStep(4)
+  }
+
+  function renderAssignKids() {
+    const filteredStudents = outreachStudents.filter(s => s.gender === outreachGender)
+    const filteredServants = outreachServants.filter(sv => sv.gender === outreachGender)
+
+    return (
+      <>
+        <Text style={styles.stepTitle}>Assign Kids</Text>
+        <Text style={styles.stepSubtitle}>
+          Assign each kid to a servant for 1:1 outreach. You can auto-assign to distribute evenly.
+        </Text>
+
+        {/* Gender toggle */}
+        <View style={{ flexDirection: 'row', marginBottom: 16, backgroundColor: colors.border, borderRadius: 10, padding: 2 }}>
+          {(['male', 'female'] as const).map(g => (
+            <TouchableOpacity
+              key={g}
+              style={{
+                flex: 1,
+                paddingVertical: 8,
+                alignItems: 'center',
+                borderRadius: 8,
+                backgroundColor: outreachGender === g ? colors.card : 'transparent',
+              }}
+              onPress={() => setOutreachGender(g)}
+            >
+              <Text style={{ fontSize: 15, color: outreachGender === g ? colors.textPrimary : colors.textSecondary, fontWeight: outreachGender === g ? '600' : '400' }}>
+                {g === 'male' ? 'Boys' : 'Girls'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Auto-assign button */}
+        <TouchableOpacity
+          style={{ backgroundColor: colors.primary, borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 16 }}
+          onPress={autoAssignOnboarding}
+        >
+          <Text style={{ color: colors.primaryText, fontWeight: '600', fontSize: 15 }}>Auto-Assign</Text>
+        </TouchableOpacity>
+
+        {loadingOutreach ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : filteredStudents.length === 0 ? (
+          <Text style={{ color: colors.textMuted, textAlign: 'center', marginTop: 20 }}>No {outreachGender === 'male' ? 'boys' : 'girls'} in your grades yet.</Text>
+        ) : (
+          filteredStudents.map(student => {
+            const assignedId = getAssignedServantId(student.id)
+            const assignedName = filteredServants.find(sv => sv.id === assignedId)?.full_name ?? 'Unassigned'
+            return (
+              <View key={student.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: colors.card, borderRadius: 10, padding: 14, marginBottom: 8, borderWidth: 1, borderColor: colors.borderLight }}>
+                <Text style={{ fontSize: 15, color: colors.textPrimary }}>
+                  {[student.first_name, student.last_name].filter(Boolean).join(' ')}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    const options = filteredServants.map(sv => ({
+                      text: sv.full_name,
+                      onPress: () => assignStudentInOnboarding(student.id, sv.id),
+                    }))
+                    Alert.alert(`Assign ${student.first_name ?? 'Student'}`, 'Choose a servant:', [
+                      ...options,
+                      { text: 'Unassign', onPress: () => assignStudentInOnboarding(student.id, '') },
+                      { text: 'Cancel', style: 'cancel' as const },
+                    ])
+                  }}
+                >
+                  <Text style={{ fontSize: 13, color: assignedId ? colors.primary : colors.textMuted, fontWeight: '500' }}>
+                    {assignedName} ›
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )
+          })
+        )}
+      </>
+    )
+  }
 
   // Step 4 is rendered as a full-screen overlay using ImportStudentsScreen
   // We pick the first saved grade to import into (most common case: single grade)
@@ -831,12 +1027,12 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
   // Step 1 is the last wizard step — "Save" triggers save
   const isLastWizardStep = step === 1
 
-  // Steps 0-1 = wizard, 2 = confirmation, 3 = import students
-  const stepContent = [renderStep1, renderStep2, renderConfirmation, renderStep4]
+  // Steps 0-1 = wizard, 2 = confirmation, 3 = assign kids, 4 = import students
+  const stepContent = [renderStep1, renderStep2, renderConfirmation, renderAssignKids, renderStep4]
   const showStepIndicator = step <= 1
-  const showFooter = step <= 1
-  // Skip only shown on import step (3) — all wizard steps are required
-  const showSkip = step === 3
+  const showFooter = step <= 1 || step === 3
+  // Skip only shown on optional steps (3 = assign kids, 4 = import)
+  const showSkip = step === 3 || step === 4
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -844,7 +1040,7 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Set Up Your Ministry</Text>
           {showSkip ? (
-            <TouchableOpacity onPress={onComplete}>
+            <TouchableOpacity onPress={step === 3 ? () => setStep(4) : onComplete}>
               <Text style={styles.skipText}>Skip</Text>
             </TouchableOpacity>
           ) : (
@@ -859,19 +1055,27 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
 
         {showFooter && (
           <View style={styles.footer}>
-            {step > 0 && (
+            {step > 0 && step !== 3 && (
               <TouchableOpacity style={styles.backButton} onPress={() => setStep(s => s - 1)} disabled={saving}>
                 <Text style={styles.backButtonText}>‹ Back</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity
               style={[styles.nextButton, saving && { opacity: 0.6 }]}
-              onPress={isLastWizardStep ? handleFinish : handleNext}
+              onPress={
+                step === 3
+                  ? handleFinishAssignKids
+                  : isLastWizardStep
+                    ? handleFinish
+                    : handleNext
+              }
               disabled={saving}
             >
               {saving
                 ? <ActivityIndicator color={colors.primaryText} />
-                : <Text style={styles.nextButtonText}>{isLastWizardStep ? 'Save & Continue →' : 'Next →'}</Text>
+                : <Text style={styles.nextButtonText}>
+                    {step === 3 ? 'Save Assignments →' : isLastWizardStep ? 'Save & Continue →' : 'Next →'}
+                  </Text>
               }
             </TouchableOpacity>
           </View>
