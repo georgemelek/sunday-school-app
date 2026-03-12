@@ -24,14 +24,12 @@ const ThemeContext = createContext<ThemeContextValue>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme()
   const [preference, setPreferenceState] = useState<ThemePreference>('system')
-  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then(value => {
       if (value === 'light' || value === 'dark' || value === 'system') {
         setPreferenceState(value)
       }
-      setLoaded(true)
     })
   }, [])
 
@@ -47,8 +45,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     () => ({ colors, isDark, preference, setPreference }),
     [colors, isDark, preference, setPreference],
   )
-
-  if (!loaded) return null
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }

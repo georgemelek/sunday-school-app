@@ -1,9 +1,12 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { QueryClientProvider } from '@tanstack/react-query'
+import * as SplashScreen from 'expo-splash-screen'
 import { queryClient } from './src/lib/queryClient'
+
+SplashScreen.preventAutoHideAsync()
 
 import { AuthProvider } from './src/contexts/AuthContext'
 import { TourProvider } from './src/contexts/TourContext'
@@ -16,6 +19,10 @@ function ThemedStatusBar() {
 }
 
 export default function App() {
+  useEffect(() => {
+    SplashScreen.hideAsync()
+  }, [])
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
     <QueryClientProvider client={queryClient}>
