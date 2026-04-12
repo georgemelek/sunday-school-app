@@ -15,6 +15,7 @@ export interface Session {
   lessonPage: string
   lessonReference: string
   lessonServantId: string | null
+  lessonServantName: string
   classAdminId: string | null
   notes: string
   status: 'scheduled' | 'canceled' | 'completed'
@@ -34,6 +35,7 @@ function rowToSession(row: any): Session {
     lessonPage: row.lesson_page ?? '',
     lessonReference: row.lesson_reference ?? '',
     lessonServantId: row.lesson_servant_id ?? null,
+    lessonServantName: row.lesson_servant_name ?? '',
     classAdminId: row.class_admin_id ?? null,
     notes: row.notes ?? '',
     status: (row.status ?? 'scheduled') as Session['status'],
@@ -107,6 +109,7 @@ function buildMockSessions(): Session[] {
       lessonPage: s.page,
       lessonReference: '',
       lessonServantId: s.servantId,
+      lessonServantName: '',
       classAdminId: s.adminId,
       notes: s.notes || '',
       status: status(s.date, s.canceled),
@@ -140,6 +143,7 @@ function buildMockSessions(): Session[] {
       lessonPage: '',
       lessonReference: '',
       lessonServantId: null,
+      lessonServantName: '',
       classAdminId: null,
       notes: '',
       status: status(s.date),
@@ -172,6 +176,7 @@ function buildMockSessions(): Session[] {
       lessonPage: '',
       lessonReference: '',
       lessonServantId: null,
+      lessonServantName: '',
       classAdminId: null,
       notes: '',
       status: status(s.date),
@@ -309,6 +314,70 @@ export function useSessions(classId?: string, classIds?: string[]) {
     }
   }
 
+  async function bulkUpdateSessions(updates: Array<{
+    id: string
+    lessonTopic?: string
+    lessonPage?: string
+    lessonReference?: string
+    lessonServantName?: string
+    lessonServantId?: string | null
+    notes?: string
+    status?: Session['status']
+  }>): Promise<{ error: string | null }> {
+    if (isTourMode) {
+      setSessions(prev => prev.map(s => {
+        const u = updates.find(u => u.id === s.id)
+        if (!u) return s
+        return {
+          ...s,
+          ...(u.lessonTopic !== undefined && { lessonTopic: u.lessonTopic }),
+          ...(u.lessonPage !== undefined && { lessonPage: u.lessonPage }),
+          ...(u.lessonReference !== undefined && { lessonReference: u.lessonReference }),
+          ...(u.lessonServantName !== undefined && { lessonServantName: u.lessonServantName }),
+          ...(u.lessonServantId !== undefined && { lessonServantId: u.lessonServantId }),
+          ...(u.notes !== undefined && { notes: u.notes }),
+          ...(u.status !== undefined && { status: u.status }),
+        }
+      }))
+      return { error: null }
+    }
+    try {
+      for (const u of updates) {
+        const patch: Record<string, unknown> = {}
+        if (u.lessonTopic !== undefined) patch.lesson_topic = u.lessonTopic
+        if (u.lessonPage !== undefined) patch.lesson_page = u.lessonPage
+        if (u.lessonReference !== undefined) patch.lesson_reference = u.lessonReference
+        if (u.lessonServantName !== undefined) patch.lesson_servant_name = u.lessonServantName
+        if (u.lessonServantId !== undefined) patch.lesson_servant_id = u.lessonServantId
+        if (u.notes !== undefined) patch.notes = u.notes
+        if (u.status !== undefined) patch.status = u.status
+
+        const { error: updateError } = await supabase
+          .from(TABLES.SESSIONS)
+          .update(patch)
+          .eq('id', u.id)
+        if (updateError) throw updateError
+      }
+      setSessions(prev => prev.map(s => {
+        const u = updates.find(u => u.id === s.id)
+        if (!u) return s
+        return {
+          ...s,
+          ...(u.lessonTopic !== undefined && { lessonTopic: u.lessonTopic }),
+          ...(u.lessonPage !== undefined && { lessonPage: u.lessonPage }),
+          ...(u.lessonReference !== undefined && { lessonReference: u.lessonReference }),
+          ...(u.lessonServantName !== undefined && { lessonServantName: u.lessonServantName }),
+          ...(u.lessonServantId !== undefined && { lessonServantId: u.lessonServantId }),
+          ...(u.notes !== undefined && { notes: u.notes }),
+          ...(u.status !== undefined && { status: u.status }),
+        }
+      }))
+      return { error: null }
+    } catch (err: any) {
+      return { error: err.message }
+    }
+  }
+
   const getUpcomingSessions = useCallback(
     (days: number): Session[] => {
       const todayStr = new Date().toISOString().split('T')[0]
@@ -348,6 +417,7 @@ export function useSessions(classId?: string, classIds?: string[]) {
     cancelSession,
     updateLessonTopic,
     updateSessionLocation,
+    bulkUpdateSessions,
     getUpcomingSessions,
     getSessionsByDateRange,
   }

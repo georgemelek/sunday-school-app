@@ -20,6 +20,7 @@ export type DashboardStackParamList = {
   Dashboard: undefined
   SessionDetail: { session: Session }
   TakeAttendance: { gradeId: string; gradeName: string }
+  ImportSessions: { classId: string; className: string }
 }
 
 // --- Grades Stack ---
@@ -96,6 +97,7 @@ export type CoordScheduleStackParamList = {
   Schedule: undefined
   SessionList: { classId: string; className: string }
   SessionForm: { classId: string; session?: Session }
+  ImportSessions: { classId: string; className: string }
 }
 
 // --- Coordinator Staffing Stack ---

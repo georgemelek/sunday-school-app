@@ -115,6 +115,7 @@ async function fetchSessions(classIds: string[]): Promise<Session[]> {
     lessonPage: row.lesson_page ?? '',
     lessonReference: row.lesson_reference ?? '',
     lessonServantId: row.lesson_servant_id ?? null,
+    lessonServantName: row.lesson_servant_name ?? '',
     classAdminId: row.class_admin_id ?? null,
     notes: row.notes ?? '',
     status: (row.status ?? 'scheduled') as Session['status'],

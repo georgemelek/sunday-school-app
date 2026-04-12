@@ -19,6 +19,7 @@ import { supabase } from '../../lib/supabase'
 import { TABLES } from '../../lib/tables'
 import { useAuth } from '../../contexts/AuthContext'
 import ImportStudentsScreen from './ImportStudentsScreen'
+import ImportSessionsScreen from '../coordinator/ImportSessionsScreen'
 import { logger } from '../../lib/logger'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -220,8 +221,9 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
   const [classes, setClasses] = useState<ClassDefinition[]>([])
   const [myClassIds, setMyClassIds] = useState<Set<string>>(new Set())
 
-  // Set after save completes — used by step 4 (import students)
+  // Set after save completes — used by step 4 (import students) and step 5 (import curriculum)
   const [savedGradeIds, setSavedGradeIds] = useState<{ id: string; name: string }[]>([])
+  const [savedClassIds, setSavedClassIds] = useState<{ id: string; name: string }[]>([])
 
   // Shared date range for all classes
   const [scheduleStartDate, setScheduleStartDate] = useState(new Date().toISOString().split('T')[0])
@@ -361,6 +363,7 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
       )
 
       const gradeIdMap: Record<string, string> = {}
+      const savedClasses: { id: string; name: string }[] = []
 
       for (const grade of grades) {
         const { data: gradeRow, error: gradeError } = await supabase
@@ -395,6 +398,7 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
           .select()
           .single()
         if (classError) throw classError
+        savedClasses.push({ id: classRow.id, name: cls.name })
 
         for (const localGradeId of cls.gradeIds) {
           const realGradeId = gradeIdMap[localGradeId]
@@ -422,6 +426,7 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
       // Advance to step 2 (confirmation) with the real grade IDs
       const savedGrades = grades.map(g => ({ id: gradeIdMap[g.id], name: g.name.trim() }))
       setSavedGradeIds(savedGrades)
+      setSavedClassIds(savedClasses)
       setStep(2)
     } catch (err: any) {
       logger.error('OnboardingScreen.handleFinish', err)
@@ -760,8 +765,12 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
           <Text style={styles.confirmationPrimaryButtonText}>Assign Kids →</Text>
         </TouchableOpacity>
 
+        <TouchableOpacity style={styles.confirmationSecondaryButton} onPress={() => setStep(5)}>
+          <Text style={styles.confirmationSecondaryButtonText}>Import Curriculum →</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.confirmationSecondaryButton} onPress={() => setStep(4)}>
-          <Text style={styles.confirmationSecondaryButtonText}>Skip to Add Students</Text>
+          <Text style={styles.confirmationSecondaryButtonText}>Add Students →</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.confirmationSecondaryButton} onPress={onComplete}>
@@ -971,9 +980,11 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
     )
   }
 
-  // Step 4 is rendered as a full-screen overlay using ImportStudentsScreen
-  // We pick the first saved grade to import into (most common case: single grade)
+  // Step 4: import students
   const [importGradeIndex, setImportGradeIndex] = useState(0)
+
+  // Step 5: import curriculum
+  const [importClassIndex, setImportClassIndex] = useState(0)
 
   function renderStep4() {
     const gradeForImport = savedGradeIds[importGradeIndex]
@@ -1013,6 +1024,44 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
     )
   }
 
+  function renderImportCurriculum() {
+    const classForImport = savedClassIds[importClassIndex]
+    if (!classForImport) return null
+
+    return (
+      <View style={{ flex: 1, marginHorizontal: -24, marginTop: -24 }}>
+        {savedClassIds.length > 1 && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, padding: 16, paddingBottom: 0 }}>
+            {savedClassIds.map((c, i) => (
+              <TouchableOpacity
+                key={c.id}
+                style={{
+                  paddingHorizontal: 14,
+                  paddingVertical: 8,
+                  borderRadius: 20,
+                  borderWidth: 1,
+                  borderColor: i === importClassIndex ? colors.primary : colors.border,
+                  backgroundColor: i === importClassIndex ? colors.primary : colors.inputBackground,
+                }}
+                onPress={() => setImportClassIndex(i)}
+              >
+                <Text style={{ fontSize: 14, color: i === importClassIndex ? colors.primaryText : colors.textSecondary }}>
+                  {c.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+        <ImportSessionsScreen
+          classId={classForImport.id}
+          className={classForImport.name}
+          onBack={onComplete}
+          onDone={onComplete}
+        />
+      </View>
+    )
+  }
+
   // ── Navigation ───────────────────────────────────────────────────────────────
 
   function handleNext() {
@@ -1030,12 +1079,12 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
   // Step 1 is the last wizard step — "Save" triggers save
   const isLastWizardStep = step === 1
 
-  // Steps 0-1 = wizard, 2 = confirmation, 3 = assign kids, 4 = import students
-  const stepContent = [renderStep1, renderStep2, renderConfirmation, renderAssignKids, renderStep4]
+  // Steps 0-1 = wizard, 2 = confirmation, 3 = assign kids, 4 = import students, 5 = import curriculum
+  const stepContent = [renderStep1, renderStep2, renderConfirmation, renderAssignKids, renderStep4, renderImportCurriculum]
   const showStepIndicator = step <= 1
   const showFooter = step <= 1 || step === 3
-  // Skip only shown on optional steps (3 = assign kids, 4 = import)
-  const showSkip = step === 3 || step === 4
+  // Skip only shown on optional steps (3 = assign kids, 4 = import students, 5 = import curriculum)
+  const showSkip = step === 3 || step === 4 || step === 5
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -1043,7 +1092,7 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Set Up Your Ministry</Text>
           {showSkip ? (
-            <TouchableOpacity onPress={step === 3 ? () => setStep(4) : onComplete}>
+            <TouchableOpacity onPress={step === 3 ? () => setStep(4) : step === 4 ? () => setStep(5) : onComplete}>
               <Text style={styles.skipText}>Skip</Text>
             </TouchableOpacity>
           ) : (

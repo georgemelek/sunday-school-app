@@ -105,11 +105,11 @@ export function SessionCard({
           </TouchableOpacity>
 
           {/* Teaching servant */}
-          {lessonServant && (
+          {(lessonServant || session.lessonServantName) && (
             <View style={styles.detailRow}>
               <Text style={styles.detailIcon}>{'\u{1F4D6}'}</Text>
               <Text style={styles.detailText}>
-                {lessonServant.fullName} teaching
+                {(lessonServant?.fullName ?? session.lessonServantName)} teaching
               </Text>
               {session.lessonPage ? (
                 <Text style={styles.pageText}> (p. {session.lessonPage})</Text>

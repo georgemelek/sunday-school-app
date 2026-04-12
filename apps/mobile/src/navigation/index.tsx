@@ -53,6 +53,7 @@ import ScheduleScreen from '../screens/coordinator/ScheduleScreen'
 import SessionListScreen from '../screens/coordinator/SessionListScreen'
 import SessionFormScreen from '../screens/coordinator/SessionFormScreen'
 import StaffingScreen from '../screens/coordinator/StaffingScreen'
+import ImportSessionsScreen from '../screens/coordinator/ImportSessionsScreen'
 
 import { useClasses } from '../hooks/useClasses'
 
@@ -104,9 +105,23 @@ function DashboardStackNavigator() {
               }
               onCancelSession={cancelSession}
               onUpdateLessonTopic={updateLessonTopic}
+              onImportCurriculum={(classId, className) =>
+                navigation.navigate('ImportSessions', { classId, className })
+              }
             />
           )
         }}
+      </DashboardStack.Screen>
+
+      <DashboardStack.Screen name="ImportSessions">
+        {({ navigation, route }) => (
+          <ImportSessionsScreen
+            classId={route.params.classId}
+            className={route.params.className}
+            onBack={() => navigation.goBack()}
+            onDone={() => navigation.goBack()}
+          />
+        )}
       </DashboardStack.Screen>
 
       <DashboardStack.Screen name="TakeAttendance">
@@ -647,6 +662,23 @@ function CoordScheduleStackNavigator() {
             onAddSession={(classId) =>
               navigation.navigate('SessionForm', { classId })
             }
+            onImport={() =>
+              navigation.navigate('ImportSessions', {
+                classId: route.params.classId,
+                className: route.params.className,
+              })
+            }
+          />
+        )}
+      </CoordScheduleStack.Screen>
+
+      <CoordScheduleStack.Screen name="ImportSessions">
+        {({ navigation, route }) => (
+          <ImportSessionsScreen
+            classId={route.params.classId}
+            className={route.params.className}
+            onBack={() => navigation.goBack()}
+            onDone={() => navigation.goBack()}
           />
         )}
       </CoordScheduleStack.Screen>

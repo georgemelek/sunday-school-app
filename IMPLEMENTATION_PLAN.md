@@ -270,6 +270,26 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 - [ ] Student photos
 - [ ] Announcements from coordinators
 - [ ] Google Calendar sync
+- [ ] Parent portal (read-only access to attendance, schedule)
+
+### Notifications (analysed 2026-03-21, not yet started)
+
+**Recommended approach: local notifications via `expo-notifications`**
+
+When the app opens, schedule on-device notifications for upcoming sessions. No backend required. Limitation: canceled/rescheduled sessions only update notifications the next time the app is opened (acceptable for this use case).
+
+A server-push approach (Supabase Edge Function + cron → Expo Push API) handles cancellations in real-time but is significantly more complex and overkill at this scale.
+
+**Do after S.13** — notification content (lesson topic, location, who's teaching) needs real Supabase data to be meaningful.
+
+**What to build:**
+- [ ] **N.1**: Install `expo-notifications`, request permissions with an explanation screen before the system prompt
+- [ ] **N.2**: `useNotifications` hook — on app open, cancel stale scheduled notifications, re-schedule for upcoming sessions based on user preferences. Conditions: skip `status === 'canceled'` sessions; skip dates servant marked unavailable
+- [ ] **N.3**: Notification settings UI in Settings tab — toggles per class type (Sunday School, Small Group, FNA, Bible Study) + lead time selector (1 week / 1 day / 1 hour before). Persist to AsyncStorage.
+- [ ] **N.4**: Rich notification content — e.g. "You're teaching 6th Grade Small Group tomorrow at 7pm · Lesson 12 · Rotating host TBD"
+- [ ] **N.5**: New EAS build required (`expo-notifications` is a native module)
+
+**Effort:** ~1–2 focused sessions. **Cost:** free (`expo-notifications` + Expo Push API are both free at this scale).
 
 ### Longer-Term
 - [ ] Multi-language support (Arabic, Coptic)

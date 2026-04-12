@@ -563,6 +563,7 @@ export type Database = {
           lesson_page: string | null
           lesson_reference: string | null
           lesson_servant_id: string | null
+          lesson_servant_name: string | null
           lesson_topic: string | null
           location_address: string | null
           location_name: string | null
@@ -583,6 +584,7 @@ export type Database = {
           lesson_page?: string | null
           lesson_reference?: string | null
           lesson_servant_id?: string | null
+          lesson_servant_name?: string | null
           lesson_topic?: string | null
           location_address?: string | null
           location_name?: string | null
@@ -603,6 +605,7 @@ export type Database = {
           lesson_page?: string | null
           lesson_reference?: string | null
           lesson_servant_id?: string | null
+          lesson_servant_name?: string | null
           lesson_topic?: string | null
           location_address?: string | null
           location_name?: string | null

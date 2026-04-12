@@ -17,6 +17,7 @@ interface SessionListScreenProps {
   onBack: () => void
   onSessionPress?: (session: Session) => void
   onAddSession?: (classId: string) => void
+  onImport?: () => void
 }
 
 function getStatusColors(colors: ThemeColors): Record<string, { bg: string; text: string }> {
@@ -33,6 +34,7 @@ export default function SessionListScreen({
   onBack,
   onSessionPress,
   onAddSession,
+  onImport,
 }: SessionListScreenProps) {
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
@@ -67,6 +69,7 @@ export default function SessionListScreen({
   function renderSession({ item }: { item: Session }) {
     const statusStyle = STATUS_COLORS[item.status] || STATUS_COLORS.scheduled
     const lessonServant = item.lessonServantId ? getServantById(item.lessonServantId) : undefined
+    const teachingLabel = lessonServant?.fullName ?? item.lessonServantName ?? null
 
     return (
       <TouchableOpacity
@@ -77,9 +80,9 @@ export default function SessionListScreen({
         <View style={styles.sessionLeft}>
           <Text style={styles.sessionDate}>{formatDate(item.date)}</Text>
           <Text style={styles.sessionTopic} numberOfLines={2}>{item.lessonTopic}</Text>
-          {lessonServant && (
-            <Text style={styles.sessionServant}>{lessonServant.fullName}</Text>
-          )}
+          {teachingLabel ? (
+            <Text style={styles.sessionServant}>{teachingLabel}</Text>
+          ) : null}
         </View>
 
         <View style={styles.sessionRight}>
@@ -114,7 +117,9 @@ export default function SessionListScreen({
           <TouchableOpacity onPress={onBack}>
             <Text style={styles.backButton}>{'\u2039'} Back</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>{className}</Text>
+          <View style={styles.headerTitleRow}>
+            <Text style={styles.headerTitle}>{className}</Text>
+          </View>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -129,7 +134,14 @@ export default function SessionListScreen({
         <TouchableOpacity onPress={onBack}>
           <Text style={styles.backButton}>{'\u2039'} Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{className}</Text>
+        <View style={styles.headerTitleRow}>
+          <Text style={styles.headerTitle}>{className}</Text>
+          {onImport && (
+            <TouchableOpacity style={styles.importButton} onPress={onImport}>
+              <Text style={styles.importButtonText}>⬆ Import</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <SectionList
@@ -176,10 +188,29 @@ const createStyles = (colors: ThemeColors) => ({
     color: colors.primary,
     marginBottom: 8,
   },
+  headerTitleRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+  },
   headerTitle: {
     fontSize: 28,
     fontWeight: '700' as const,
     color: colors.textPrimary,
+    flex: 1,
+  },
+  importButton: {
+    backgroundColor: colors.inputBackground,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  importButtonText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600' as const,
   },
   listContent: {
     padding: 16,

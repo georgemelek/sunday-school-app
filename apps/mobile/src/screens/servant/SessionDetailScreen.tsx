@@ -34,6 +34,7 @@ interface SessionDetailScreenProps {
   onTakeAttendance?: (gradeId: string, gradeName: string) => void
   onCancelSession?: (sessionId: string, reason: string) => Promise<{ error: string | null }>
   onUpdateLessonTopic?: (sessionId: string, topic: string) => Promise<{ error: string | null }>
+  onImportCurriculum?: (classId: string, className: string) => void
 }
 
 export default function SessionDetailScreen({
@@ -42,6 +43,7 @@ export default function SessionDetailScreen({
   onTakeAttendance,
   onCancelSession,
   onUpdateLessonTopic,
+  onImportCurriculum,
 }: SessionDetailScreenProps) {
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
@@ -185,6 +187,14 @@ export default function SessionDetailScreen({
               <Text style={[styles.tagText, { color: tagColor }]}>{classTypeName}</Text>
             </View>
           ) : null}
+          {onImportCurriculum && cls && (
+            <TouchableOpacity
+              style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.inputBackground }}
+              onPress={() => onImportCurriculum(session.classId, cls.name)}
+            >
+              <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '600' }}>⬆ Import CSV</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
