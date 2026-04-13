@@ -75,17 +75,6 @@ export default function RegisterScreen({ navigation }: Props) {
       // Profile will be automatically created by database trigger
       // Wait a moment for trigger to complete
       await new Promise(resolve => setTimeout(resolve, 500))
-
-      Alert.alert(
-        'Success',
-        'Account created successfully! You can now sign in.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Login'),
-          },
-        ]
-      )
     } catch (error: any) {
       Alert.alert('Registration Failed', error.message || 'An error occurred during registration')
     } finally {
@@ -101,7 +90,7 @@ export default function RegisterScreen({ navigation }: Props) {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.content}>
           <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join your Sunday School community</Text>
+          <Text style={styles.subtitle}>Join your ministry community</Text>
 
           <View style={styles.form}>
             <TextInput

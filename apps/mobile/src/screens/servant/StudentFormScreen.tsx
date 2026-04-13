@@ -54,7 +54,8 @@ export default function StudentFormScreen({
   onBack,
 }: StudentFormScreenProps) {
   const styles = useThemedStyles(createStyles)
-  const { colors } = useTheme()
+  const { colors, isDark } = useTheme()
+  const keyboardAppearance = isDark ? 'dark' : 'light'
   const [formData, setFormData] = useState<StudentFormData>(
     student ? formDataFromStudent(student) : EMPTY_FORM
   )
@@ -127,6 +128,7 @@ export default function StudentFormScreen({
           editable={!saving}
           keyboardType={opts?.keyboardType ?? 'default'}
           autoCapitalize={opts?.autoCapitalize ?? 'sentences'}
+          keyboardAppearance={keyboardAppearance}
         />
         {errors[key] && <Text style={styles.errorText}>{errors[key]}</Text>}
       </View>
@@ -206,6 +208,7 @@ export default function StudentFormScreen({
             multiline
             numberOfLines={4}
             textAlignVertical="top"
+            keyboardAppearance={keyboardAppearance}
           />
         </View>
 

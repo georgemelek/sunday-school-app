@@ -113,14 +113,16 @@ export default function DashboardScreen({
     s => !isServantAvailable(currentUserId, s.date)
   )
 
-  // Find dates with thin staffing (<=3 available) — consolidate into one alert (14-day window)
-  const thinStaffingDates = alertWindow.reduce<{ date: string; label: string; count: number }[]>((acc, s) => {
+  // Find dates with thin staffing (<75% available) — consolidate into one alert (14-day window)
+  const thinStaffingDates = alertWindow.reduce<{ date: string; label: string; count: number; total: number }[]>((acc, s) => {
     const cls = getClassById(s.classId)
-    if (!cls) return acc
+    if (!cls || cls.servantIds.length === 0) return acc
     const unavailableIds = getUnavailableServantsForDate(s.date, cls.servantIds)
-    const availableCount = cls.servantIds.length - unavailableIds.length
-    if (availableCount <= 3 && !acc.find(a => a.date === s.date)) {
-      acc.push({ date: s.date, label: formatShortDate(s.date), count: availableCount })
+    const total = cls.servantIds.length
+    const availableCount = total - unavailableIds.length
+    const availablePct = availableCount / total
+    if (availablePct < 0.75 && !acc.find(a => a.date === s.date)) {
+      acc.push({ date: s.date, label: formatShortDate(s.date), count: availableCount, total })
     }
     return acc
   }, [])
@@ -174,7 +176,7 @@ export default function DashboardScreen({
             <Text style={styles.alertIcon}>{'\u26A0\uFE0F'}</Text>
             <Text style={styles.alertText}>
               {thinStaffingDates.length === 1
-                ? `Only ${thinStaffingDates[0].count} servant${thinStaffingDates[0].count !== 1 ? 's' : ''} available on ${thinStaffingDates[0].label}`
+                ? `Thin staffing on ${thinStaffingDates[0].label}: ${thinStaffingDates[0].count}/${thinStaffingDates[0].total} servants available`
                 : `Thin staffing on ${thinStaffingDates.length} upcoming dates: ${thinStaffingDates.map(d => d.label).join(', ')}`
               }
             </Text>

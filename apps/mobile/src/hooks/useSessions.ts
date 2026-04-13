@@ -270,6 +270,28 @@ export function useSessions(classId?: string, classIds?: string[]) {
     }
   }
 
+  async function uncancelSession(sessionId: string) {
+    if (isTourMode) {
+      setSessions(prev => prev.map(s =>
+        s.id === sessionId ? { ...s, status: 'scheduled' } : s
+      ))
+      return { error: null }
+    }
+    try {
+      const { error: updateError } = await supabase
+        .from(TABLES.SESSIONS)
+        .update({ status: 'scheduled' })
+        .eq('id', sessionId)
+      if (updateError) throw updateError
+      setSessions(prev => prev.map(s =>
+        s.id === sessionId ? { ...s, status: 'scheduled' } : s
+      ))
+      return { error: null }
+    } catch (err: any) {
+      return { error: err.message }
+    }
+  }
+
   async function updateLessonTopic(sessionId: string, topic: string) {
     if (isTourMode) {
       setSessions(prev => prev.map(s =>
@@ -415,6 +437,7 @@ export function useSessions(classId?: string, classIds?: string[]) {
     error,
     refetch: fetchSessions,
     cancelSession,
+    uncancelSession,
     updateLessonTopic,
     updateSessionLocation,
     bulkUpdateSessions,

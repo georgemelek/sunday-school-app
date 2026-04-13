@@ -95,7 +95,7 @@ function DashboardStackNavigator() {
 
       <DashboardStack.Screen name="SessionDetail">
         {({ navigation, route }) => {
-          const { cancelSession, updateLessonTopic } = useSessions(route.params.session.classId)
+          const { cancelSession, uncancelSession, updateLessonTopic } = useSessions(route.params.session.classId)
           return (
             <SessionDetailScreen
               session={route.params.session}
@@ -104,6 +104,7 @@ function DashboardStackNavigator() {
                 navigation.navigate('TakeAttendance', { gradeId, gradeName })
               }
               onCancelSession={cancelSession}
+              onUncancelSession={uncancelSession}
               onUpdateLessonTopic={updateLessonTopic}
               onImportCurriculum={(classId, className) =>
                 navigation.navigate('ImportSessions', { classId, className })

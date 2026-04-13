@@ -56,7 +56,7 @@ export default function LoginScreen({ navigation, onTakeTour }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={styles.content}>
-        <Text style={styles.title}>Sunday School</Text>
+        <Text style={styles.title}>MinistryHub</Text>
         <Text style={styles.subtitle}>Sign in to continue</Text>
 
         <View style={styles.form}>

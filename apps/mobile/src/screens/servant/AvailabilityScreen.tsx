@@ -203,7 +203,10 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
                     <Text style={styles.dateLabel}>{group.label}</Text>
                     {group.sessions.map(s => (
                       <Text key={s.id} style={styles.sessionInfo}>
-                        {s.className}{s.classTypeName ? ` \u00B7 ${s.classTypeName}` : ''}
+                        {s.className}
+                        {s.classTypeName && !s.className.includes(s.classTypeName)
+                          ? ` \u00B7 ${s.classTypeName}`
+                          : ''}
                       </Text>
                     ))}
                   </View>

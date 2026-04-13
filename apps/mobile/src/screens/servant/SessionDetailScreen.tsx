@@ -33,6 +33,7 @@ interface SessionDetailScreenProps {
   onBack: () => void
   onTakeAttendance?: (gradeId: string, gradeName: string) => void
   onCancelSession?: (sessionId: string, reason: string) => Promise<{ error: string | null }>
+  onUncancelSession?: (sessionId: string) => Promise<{ error: string | null }>
   onUpdateLessonTopic?: (sessionId: string, topic: string) => Promise<{ error: string | null }>
   onImportCurriculum?: (classId: string, className: string) => void
 }
@@ -42,6 +43,7 @@ export default function SessionDetailScreen({
   onBack,
   onTakeAttendance,
   onCancelSession,
+  onUncancelSession,
   onUpdateLessonTopic,
   onImportCurriculum,
 }: SessionDetailScreenProps) {
@@ -108,6 +110,29 @@ export default function SessionDetailScreen({
       'grade-6': '6th Grade',
     }
     onTakeAttendance(gradeId, gradeNames[gradeId] || gradeId)
+  }
+
+  function handleUncancelSession() {
+    if (!onUncancelSession) return
+    Alert.alert(
+      'Restore Session',
+      'Mark this session as scheduled again?',
+      [
+        { text: 'Never mind', style: 'cancel' },
+        {
+          text: 'Restore',
+          onPress: async () => {
+            const { error } = await onUncancelSession(localSession.id)
+            if (error) {
+              logger.error('SessionDetailScreen.uncancelSession', error)
+              Alert.alert('Could not restore session', 'Please try again.')
+            } else {
+              setLocalSession(prev => ({ ...prev, status: 'scheduled' }))
+            }
+          },
+        },
+      ]
+    )
   }
 
   function handleCancelSession() {
@@ -352,6 +377,13 @@ export default function SessionDetailScreen({
         {canTakeAttendance && (
           <TouchableOpacity style={styles.attendanceButton} onPress={handleTakeAttendance}>
             <Text style={styles.attendanceButtonText}>Take Attendance</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Uncancel session */}
+        {isCanceled && onUncancelSession && (
+          <TouchableOpacity style={styles.uncancelButton} onPress={handleUncancelSession}>
+            <Text style={styles.uncancelButtonText}>Restore Session</Text>
           </TouchableOpacity>
         )}
 
@@ -661,6 +693,21 @@ const createStyles = (colors: ThemeColors) => ({
   },
   cancelButtonText: {
     color: colors.error,
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+
+  // Uncancel (restore) session button
+  uncancelButton: {
+    borderRadius: 10,
+    padding: 16,
+    alignItems: 'center' as const,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: colors.success,
+  },
+  uncancelButtonText: {
+    color: colors.success,
     fontSize: 15,
     fontWeight: '600' as const,
   },

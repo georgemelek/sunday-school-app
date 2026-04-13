@@ -133,13 +133,13 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 - [x] **BF.8**: **Session cancellation stale** — Fixed: `handleCancelSession` updates `localSession.status` to `'canceled'` immediately on success, so the UI reflects the change without requiring navigation.
 - [x] **BF.9**: **Student list stale after CSV import** — Fixed: same `useFocusEffect` in `GradeDetailScreen`.
 - [x] **BF.10**: **Grades shown after onboarding setup** — Fixed: `MyGradesScreen` now uses `useFocusEffect` to refetch grades on focus; grades appear immediately after returning from onboarding.
-- [ ] **BF.11**: **Staffing alert threshold** — Thin-staffing reminder fires even when the servant is 1 of 1. Alert should be percentage-based (e.g., < 75% of expected servants available), not a flat number check.
-- [ ] **BF.12**: **Availability class label duplicated** — Each class shown on the Availability screen reads "Sunday School • Sunday School" (and similarly for other types). Remove the duplicate — show class name once.
-- [ ] **BF.13**: **"Sunday School" branding** — App still says "Sunday School" in some places; should say "MinistryHub" everywhere.
+- [x] **BF.11**: **Staffing alert threshold** — Changed from flat `<= 3` check to `< 75%` of total servants. Alert text updated to show `count/total` for clarity.
+- [x] **BF.12**: **Availability class label duplicated** — Fixed: only appends the class type name if it's not already contained in the class name string.
+- [x] **BF.13**: **"Sunday School" branding** — Fixed: LoginScreen title and RegisterScreen subtitle updated to "MinistryHub" / "Join your ministry community". Class type names ("Sunday School", "Small Group", etc.) are intentionally unchanged — they name the type of class, not the app.
 - [ ] **BF.14**: **Attendance must be tied to a session** — Taking attendance should require selecting a specific session. Rules: (a) if a session exists today → pre-select it; (b) if no session today → prompt "Mark attendance for a past session?" and offer the most recent session without attendance + a list of all un-attended sessions; (c) never allow marking attendance for a future session.
-- [ ] **BF.15**: **No uncancel option** — Once a session is cancelled, there is no way to revert it. Add an "Uncancel Session" action on the SessionDetailScreen when status is 'canceled'.
+- [x] **BF.15**: **No uncancel option** — Added `uncancelSession` mutation to `useSessions`, `onUncancelSession` prop to `SessionDetailScreen`, and a "Restore Session" button (green border) that appears when status is `'canceled'`. Updates local state immediately on success.
 - [ ] **BF.16**: **Missing recent attendance section on real data** — GradeDetailScreen shows a "recent attendance" summary section in mock data but nothing in real data, leaving a visual gap. Wire the real attendance query to populate this section.
-- [ ] **BF.17**: **Sign up: modal after success** — A modal appears after successful registration prompting the user to sign in. Remove it; redirect directly to the dashboard instead.
+- [x] **BF.17**: **Sign up: modal after success** — Removed the `Alert.alert` success dialog. Auth state listener in `AuthContext` automatically routes the user to the dashboard when the session is set by `signUp`.
 
 ### HIGH PRIORITY — Auth & Security
 
