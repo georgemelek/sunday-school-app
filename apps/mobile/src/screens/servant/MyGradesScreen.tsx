@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React, { useRef, useCallback } from 'react'
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native'
+import { useFocusEffect } from '@react-navigation/native'
 import { Swipeable } from 'react-native-gesture-handler'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useGrades, GradeWithStats } from '../../hooks/useGrades'
@@ -25,15 +26,22 @@ export default function MyGradesScreen({ onGradePress, onBack, onStartOnboarding
   const { colors } = useTheme()
   const { grades, loading, error, refetch, deleteGrade } = useGrades()
 
-  const handleGradePress = (gradeId: string, gradeName: string) => {
+  // Refetch whenever this screen comes back into focus (e.g. after onboarding completes)
+  useFocusEffect(
+    useCallback(() => {
+      refetch()
+    }, [])
+  )
+
+  const handleGradePress = useCallback((gradeId: string, gradeName: string) => {
     if (onGradePress) {
       onGradePress(gradeId, gradeName)
     } else {
       Alert.alert('Navigation', `Would navigate to ${gradeName} detail screen`)
     }
-  }
+  }, [onGradePress])
 
-  const handleDeleteGrade = (grade: GradeWithStats) => {
+  const handleDeleteGrade = useCallback((grade: GradeWithStats) => {
     Alert.alert(
       'Remove Grade',
       `Remove "${grade.name}" from your ministry? You'll no longer see its sessions on your dashboard. The grade and its students remain in the system for other servants.`,
@@ -52,7 +60,17 @@ export default function MyGradesScreen({ onGradePress, onBack, onStartOnboarding
         },
       ]
     )
-  }
+  }, [deleteGrade])
+
+  const gradeKeyExtractor = useCallback((item: GradeWithStats) => item.id, [])
+
+  const renderGradeItem = useCallback(({ item }: { item: GradeWithStats }) => (
+    <SwipeableGradeRow
+      grade={item}
+      onPress={() => handleGradePress(item.id, item.name)}
+      onDelete={() => handleDeleteGrade(item)}
+    />
+  ), [handleGradePress, handleDeleteGrade])
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
@@ -115,14 +133,8 @@ export default function MyGradesScreen({ onGradePress, onBack, onStartOnboarding
       ) : (
         <FlatList
           data={grades}
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => (
-            <SwipeableGradeRow
-              grade={item}
-              onPress={() => handleGradePress(item.id, item.name)}
-              onDelete={() => handleDeleteGrade(item)}
-            />
-          )}
+          keyExtractor={gradeKeyExtractor}
+          renderItem={renderGradeItem}
           contentContainerStyle={grades.length === 0 ? styles.emptyListContainer : styles.listContainer}
           ListEmptyComponent={renderEmptyState}
           refreshControl={

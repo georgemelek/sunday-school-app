@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native'
+import { useFocusEffect } from '@react-navigation/native'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useStudents, studentDisplayName } from '../../hooks/useStudents'
 import { StudentListItem } from '../../components/StudentListItem'
@@ -41,19 +42,33 @@ export default function GradeDetailScreen({
   const { students, loading, error, refetch, deleteStudent } = useStudents(gradeId)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTab, setActiveTab] = useState<Tab>('students')
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  // Silent background refetch on focus — does not show the pull-to-refresh spinner
+  useFocusEffect(
+    useCallback(() => {
+      refetch()
+    }, [gradeId])
+  )
+
+  const handlePullToRefresh = useCallback(async () => {
+    setIsRefreshing(true)
+    await refetch()
+    setIsRefreshing(false)
+  }, [refetch])
 
   const filteredStudents = students.filter(student =>
     studentDisplayName(student).toLowerCase().includes(searchQuery.toLowerCase())
   )
 
-  const handleStudentPress = (studentId: string) => {
+  const handleStudentPress = useCallback((studentId: string) => {
     const student = students.find(s => s.id === studentId)
     if (student && onEditStudent) {
       onEditStudent(student)
     } else {
       Alert.alert('Navigation', 'Edit student functionality coming soon')
     }
-  }
+  }, [students, onEditStudent])
 
   const handleDeleteStudent = (studentId: string, studentName: string) => {
     Alert.alert(
@@ -91,6 +106,15 @@ export default function GradeDetailScreen({
       Alert.alert('Navigation', 'Take attendance functionality coming soon')
     }
   }
+
+  const keyExtractor = useCallback((item: { id: string }) => item.id, [])
+
+  const renderStudentItem = useCallback(({ item }: { item: any }) => (
+    <StudentListItem
+      student={item}
+      onPress={() => handleStudentPress(item.id)}
+    />
+  ), [handleStudentPress])
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
@@ -135,13 +159,8 @@ export default function GradeDetailScreen({
     return (
       <FlatList
         data={filteredStudents}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <StudentListItem
-            student={item}
-            onPress={() => handleStudentPress(item.id)}
-          />
-        )}
+        keyExtractor={keyExtractor}
+        renderItem={renderStudentItem}
         contentContainerStyle={
           filteredStudents.length === 0
             ? styles.emptyListContainer
@@ -161,7 +180,7 @@ export default function GradeDetailScreen({
           )
         }
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refetch} tintColor={colors.primary} />
+          <RefreshControl refreshing={isRefreshing} onRefresh={handlePullToRefresh} tintColor={colors.primary} />
         }
       />
     )

@@ -193,7 +193,11 @@ export default function DashboardScreen({
     )
   }
 
-  function renderSessionItem({ item: session }: { item: Session }) {
+  const handleSessionPress = useCallback((session: Session) => {
+    onSessionPress?.(session)
+  }, [onSessionPress])
+
+  const renderSessionItem = useCallback(({ item: session }: { item: Session }) => {
     const cls = getClassById(session.classId)
     const classType = cls
       ? classTypes.find(ct => ct.id === cls.classTypeId)
@@ -217,30 +221,30 @@ export default function DashboardScreen({
         lessonServant={lessonServant}
         unavailableServants={unavailableServants}
         totalServants={cls?.servantIds.length || 0}
-        onPress={onSessionPress ? () => onSessionPress(session) : undefined}
+        onPress={onSessionPress ? () => handleSessionPress(session) : undefined}
       />
     )
-  }
+  }, [classes, classTypes, servants, availability, onSessionPress, handleSessionPress])
 
-  function renderSectionHeader({ section }: { section: { title: string; weekStart: boolean } }) {
+  const renderSectionHeader = useCallback(({ section }: { section: { title: string; weekStart: boolean } }) => {
     return (
       <View>
         {section.weekStart && <View style={styles.weekDivider} />}
         <Text style={styles.dateSectionHeader}>{section.title}</Text>
       </View>
     )
-  }
+  }, [styles])
 
-  function renderFooter() {
+  const renderFooter = useCallback(() => {
     if (!hasMore) return null
     return (
       <TouchableOpacity style={styles.loadMoreButton} onPress={() => setVisibleDays(d => d + 14)}>
         <Text style={styles.loadMoreText}>Load more sessions</Text>
       </TouchableOpacity>
     )
-  }
+  }, [hasMore, styles])
 
-  function renderEmpty() {
+  const renderEmpty = useCallback(() => {
     if (loading) return null
     return (
       <View style={styles.emptyState}>
@@ -248,7 +252,7 @@ export default function DashboardScreen({
         <Text style={styles.emptyText}>Check back later for schedule updates</Text>
       </View>
     )
-  }
+  }, [loading, styles])
 
   if (loading && upcoming.length === 0) {
     return (

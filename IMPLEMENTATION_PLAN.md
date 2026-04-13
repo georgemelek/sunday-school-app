@@ -117,6 +117,75 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 
 ---
 
+## Phase 4b: Beta Feedback — Bug Fixes & UX Improvements
+
+> Feedback collected from internal distribution build (April 2026). Items ordered high → medium → low priority within each group.
+
+### HIGH PRIORITY — Bugs & Broken Flows
+
+- [ ] **BF.1**: **Splash screen on load** — App skips splash screen and shows a loading spinner on first load. Show the native splash screen for the duration the spinner would appear instead.
+- [ ] **BF.2**: **Dark mode modals** — Modals appear with a light background in dark mode. All modal surfaces must respect the active theme.
+- [ ] **BF.3**: **Keyboard dark mode** — Keyboard has a white background in dark mode when editing student details. Fix keyboard appearance to respect the theme (`keyboardAppearance="dark"`).
+- [ ] **BF.4**: **Dashboard scroll / greeting position** — "Good morning, George" renders lower than expected when navigating back to the Dashboard; repositions on refresh. Fix layout so greeting is always at the top. Also: entire dashboard should be scrollable (currently only portions scroll).
+- [x] **BF.5**: **Student count tag stale after import** — Fixed: `GradeDetailScreen` now uses `useFocusEffect` to refetch students on focus, so the list (and count in the header) updates automatically when returning from import.
+- [x] **BF.6**: **Student name stale after edit** — Fixed: same `useFocusEffect` in `GradeDetailScreen` ensures the list refetches after returning from edit.
+- [x] **BF.7**: **Session topic stale after edit** — Fixed: `SessionDetailScreen` now tracks session in local state (`localSession`); `handleSaveTopic` updates `localSession.lessonTopic` immediately on success.
+- [x] **BF.8**: **Session cancellation stale** — Fixed: `handleCancelSession` updates `localSession.status` to `'canceled'` immediately on success, so the UI reflects the change without requiring navigation.
+- [x] **BF.9**: **Student list stale after CSV import** — Fixed: same `useFocusEffect` in `GradeDetailScreen`.
+- [x] **BF.10**: **Grades shown after onboarding setup** — Fixed: `MyGradesScreen` now uses `useFocusEffect` to refetch grades on focus; grades appear immediately after returning from onboarding.
+- [ ] **BF.11**: **Staffing alert threshold** — Thin-staffing reminder fires even when the servant is 1 of 1. Alert should be percentage-based (e.g., < 75% of expected servants available), not a flat number check.
+- [ ] **BF.12**: **Availability class label duplicated** — Each class shown on the Availability screen reads "Sunday School • Sunday School" (and similarly for other types). Remove the duplicate — show class name once.
+- [ ] **BF.13**: **"Sunday School" branding** — App still says "Sunday School" in some places; should say "MinistryHub" everywhere.
+- [ ] **BF.14**: **Attendance must be tied to a session** — Taking attendance should require selecting a specific session. Rules: (a) if a session exists today → pre-select it; (b) if no session today → prompt "Mark attendance for a past session?" and offer the most recent session without attendance + a list of all un-attended sessions; (c) never allow marking attendance for a future session.
+- [ ] **BF.15**: **No uncancel option** — Once a session is cancelled, there is no way to revert it. Add an "Uncancel Session" action on the SessionDetailScreen when status is 'canceled'.
+- [ ] **BF.16**: **Missing recent attendance section on real data** — GradeDetailScreen shows a "recent attendance" summary section in mock data but nothing in real data, leaving a visual gap. Wire the real attendance query to populate this section.
+- [ ] **BF.17**: **Sign up: modal after success** — A modal appears after successful registration prompting the user to sign in. Remove it; redirect directly to the dashboard instead.
+
+### HIGH PRIORITY — Auth & Security
+
+- [ ] **BF.18**: **Sign up: first/last name fields** — Sign up form has one "Full Name" field. Split into separate First Name and Last Name fields.
+- [ ] **BF.19**: **Sign up: phone number field** — Phone number input should have a separate country code selector and auto-format the number as `(XXX) XXX-XXXX` to prevent inconsistent data in the database.
+- [ ] **BF.20**: **Sign up: no email verification or password strength** — Add email verification (Supabase built-in) and enforce minimum password requirements (e.g., 8+ chars, 1 uppercase, 1 number). Show strength indicator on the form.
+- [ ] **BF.21**: **Multi-method login & duplicate account prevention** — Support login via phone number (and optionally Google, Apple, Facebook). To prevent duplicate accounts: before creating an account, check if the identifier (email/phone) is already registered and surface a "looks like you already have an account — sign in instead?" prompt. Note: exposing whether an identifier exists is a standard, accepted trade-off; the risk (account enumeration) is low for a ministry app and far outweighed by the UX benefit of preventing duplicate accounts. Document this decision.
+- [ ] **BF.22**: **Security scan** — Run a security audit of the application (dependencies, Supabase RLS, auth flows, PII handling). See Phase 5 (L.6) for overlap.
+
+### MEDIUM PRIORITY — UX Polish
+
+- [ ] **BF.23**: **Student detail screen: view vs edit mode** — Student detail screen should open in read-only view mode. Edits should only be possible after tapping an explicit "Edit" button, to prevent accidental edits.
+- [ ] **BF.24**: **Cancel edit confirmation** — If a user has unsaved edits on a student form and taps "Cancel", show a confirmation dialog ("Discard changes?") before navigating away.
+- [ ] **BF.25**: **Grade detail: full-screen scroll** — On the grade detail screen, scrolling is limited to the bottom section. The entire screen (including the header area) should scroll so students fill the full viewport.
+- [ ] **BF.26**: **Onboarding step 1 copy** — Remove the "at a larger/smaller church" language. Replace with accurate framing: "Does your church divide Sunday School by grade, or is it all one class?"
+- [ ] **BF.27**: **Onboarding step 2: class selection simplification** — Remove the distinction between "classes your grade attends" vs "classes you personally serve" if a servant has no purpose selecting classes they don't serve. Simplify to only: "What classes do you personally serve?"
+- [ ] **BF.28**: **Onboarding step 2: Yes/No → checkboxes** — Replace Yes/No chips with checkboxes for class type selection.
+- [ ] **BF.29**: **Onboarding: time picker in 30-minute increments** — Class start/end times should snap to 30-minute intervals (e.g., 7:00, 7:30, 8:00) — not arbitrary values like 7:47.
+- [ ] **BF.30**: **Onboarding: Coptic year end-date preset** — Add a preset for the Coptic school year end date (varies yearly — George to provide date each year). Date range picker should also constrain to valid weekdays for the class type (e.g., only Sundays for Sunday School).
+- [ ] **BF.31**: **Onboarding success screen: fix action buttons** — After setup, success screen shows "Assign Kids", "Add Students", and "Go to Dashboard". Since there are no kids yet, "Assign Kids" makes no sense. Replace with just "Add Students" and "Go to Dashboard".
+- [ ] **BF.32**: **Session location: free-text address input** — Session location is currently a hardcoded string ("Church", "Rotating home"). Allow servants to enter a real address. Evaluate Google Maps Places Autocomplete cost (note: Places API charges ~$0.017/request after free tier — for a small ministry app this is negligible, but consider a one-time address entry + save pattern to minimize API calls).
+- [ ] **BF.33**: **Availability: load more sessions** — Availability screen only shows the next ~30 days of sessions. Add a "Load More" button (or infinite scroll) to see sessions further in advance.
+- [ ] **BF.34**: **Dashboard / empty states: contextual CTAs** — When the dashboard shows "No upcoming sessions", point users to "Set Up Your Ministry". On the Availability screen with no sessions, do the same. On the Outreach screen with no kids assigned, point to ministry setup rather than manage assignments.
+- [ ] **BF.35**: **"Set Up My Ministry" prominent after onboarding** — After setup wizard, the button should no longer dominate the UI (it currently persists in the header). Once a grade/class exists, the button should disappear or move to a less prominent location.
+- [ ] **BF.36**: **Who's teaching: make it more prominent** — On session cards and session detail screens, highlight when the logged-in servant is the one teaching (e.g., a distinct border, highlight, or badge).
+- [ ] **BF.37**: **Students screen action bar layout** — The three action buttons (Attendance, Import, Add) look inconsistent: left button is blue, others are black in dark mode, and "Attendance" text wraps onto a second line. Fix: uniform color + ensure all labels fit on one line.
+- [ ] **BF.38**: **"Local friend" categorization on grade detail** — Extend the "local friend" concept to the grade detail screen: students marked as local friends should appear at the bottom, and servants should be able to toggle local friend status directly from the grade list (not just the outreach screen).
+- [ ] **BF.39**: **Manage Assignments UX** — Current UX: tapping a student circle opens a single-student modal. Investigate industry standard. Proposal: tapping selects the student into a selection set, then a single action button handles the operation. Remove the "Girls" tab if the current servant has no girl students.
+- [ ] **BF.40**: **Gender visibility / assignment rules** — Think through whether servants should see and import only students of their assigned gender. Male servants should only see male students in assignments. Other churches may not have this restriction — make it a church-level setting. Needs design.
+- [ ] **BF.41**: **"Take a Tour" clarity** — Make it clearer on the welcome screen that "Take a Tour" is an alternative to signing up, it's a preview-only mode, and it only shows the servant view (not coordinator/priest).
+- [ ] **BF.42**: **Sign up: auto-suggest for name and email fields** — Enable `autoComplete="name"` / `autoComplete="email"` and `textContentType` on the relevant inputs so iOS/Android can suggest values from the keyboard.
+- [ ] **BF.43**: **Sign up: required field indicators** — Replace the ` *` pattern (space + asterisk) with a cleaner UX convention. Options: inline "(required)" label, a small red dot, or simply mark optional fields as "(optional)" and leave required fields unmarked.
+- [ ] **BF.44**: **Message templates: first contact vs follow-up** — Create separate message templates depending on whether this is the first outreach attempt to a parent or a follow-up.
+- [ ] **BF.45**: **Settings tab: what makes sense?** — Audit and define a meaningful settings screen. Minimum: Change Password, Delete Account, Theme toggle, Notification preferences, About/version. Add "Change Password" and "Delete Account" actions.
+- [ ] **BF.46**: **Bulk session/curriculum import (IMPORTANT)** — Add a CSV import flow for sessions/curriculum (lesson topics, dates, assigned teacher). Use the existing `~/Downloads/25-26 JH Master.xlsx - 06 Grade.csv` format as the base schema. This is the highest-leverage coordinator tool.
+
+### LOW PRIORITY — Architecture & Tech Debt
+
+- [ ] **BF.47**: **White corners on app open (EAS-specific?)** — On launch, the app briefly shows white corners around the icon. May be specific to the internal distribution build's splash/icon config. Investigate whether the icon has transparency or the launch screen background color is mismatched; may resolve with a production build.
+- [ ] **BF.48**: **Replace emoji icons with icon library** — App uses emojis as icons throughout (buttons, empty states, status indicators). Replace with a proper icon library (e.g., `@expo/vector-icons` / Lucide / Heroicons) for consistency and professionalism.
+- [ ] **BF.49**: **Shared component library / style tokens** — See Phase 7 (UI.1–UI.3). Reduce per-screen style boilerplate; shared CSS/component system will reduce codebase size and Claude token usage on future edits.
+- [ ] **BF.50**: **Student import friction — AI-assisted normalization** — Adding students is high-friction. Proposal: provide a deep link or in-app prompt that opens ChatGPT with a prefilled prompt to normalize the servant's existing spreadsheet into the app's CSV template. This keeps AI costs out of the app while still reducing friction significantly. Native AI integration would be expensive and harder to maintain.
+- [ ] **BF.51**: **Availability: calendar integration** — Show Apple Calendar / Google Calendar events on the same dates as sessions, so servants can see conflicts at a glance. Requires `expo-calendar` and user permission. Nice-to-have for a future release.
+
+---
+
 ## Phase 5: Privacy, Legal & Compliance
 
 > The app stores kids' names, parent contact info, and addresses. This needs to be handled carefully before any real data enters the system.
@@ -309,6 +378,7 @@ A server-push approach (Supabase Edge Function + cron → Expo Push API) handles
 | 2. Servant Core UI | Done |
 | 3. Servant Dashboard & Features | Done |
 | 4. Supabase Integration | In Progress |
+| 4b. Beta Feedback | In Progress |
 | 5. Privacy & Legal | Not Started |
 | 6. Dark Mode | Not Started |
 | 7. UI Component System | Not Started |

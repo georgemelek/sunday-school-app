@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo } from 'react'
 import { View, Text, TouchableOpacity, Linking, Platform } from 'react-native'
 import { Session } from '../hooks/useSessions'
 import { ClassInfo, ClassType, Servant } from '../data/mockData'
@@ -21,7 +21,7 @@ const getClassTypeColors = (colors: ThemeColors): Record<string, string> => ({
   'Bible Study': colors.classBibleStudy,
 })
 
-export function SessionCard({
+export const SessionCard = memo(function SessionCard({
   session,
   classInfo,
   classType,
@@ -153,7 +153,7 @@ export function SessionCard({
       )}
     </TouchableOpacity>
   )
-}
+})
 
 function formatTimeRange(start: string, end: string): string {
   return `${formatTime(start)} – ${formatTime(end)}`

@@ -52,44 +52,46 @@ export default function SessionDetailScreen({
   const { getClassById, getServantById, getServantsByClassId } = useClasses()
   const { isServantAvailable } = useAvailability()
 
+  // Keep a local copy of the session so mutations (topic edit, cancel) reflect immediately
+  const [localSession, setLocalSession] = useState(session)
   const [editingTopic, setEditingTopic] = useState(false)
   const [topicDraft, setTopicDraft] = useState(session.lessonTopic)
   const [savingTopic, setSavingTopic] = useState(false)
 
   const classTypeColors = getClassTypeColors(colors)
 
-  const cls = getClassById(session.classId)
+  const cls = getClassById(localSession.classId)
   const classType = cls
     ? MOCK_CLASS_TYPES.find(ct => ct.id === cls.classTypeId)
     : undefined
   const classTypeName = classType?.name || ''
   const tagColor = classTypeColors[classTypeName] || colors.primary
 
-  const lessonServant = session.lessonServantId
-    ? getServantById(session.lessonServantId)
+  const lessonServant = localSession.lessonServantId
+    ? getServantById(localSession.lessonServantId)
     : undefined
-  const classAdmin = session.classAdminId
-    ? getServantById(session.classAdminId)
+  const classAdmin = localSession.classAdminId
+    ? getServantById(localSession.classAdminId)
     : undefined
 
   const allServants = cls ? getServantsByClassId(cls.id) : []
 
-  const isCanceled = session.status === 'canceled'
-  const isCompleted = session.status === 'completed'
+  const isCanceled = localSession.status === 'canceled'
+  const isCompleted = localSession.status === 'completed'
   const currentUserId = isTourMode ? CURRENT_USER.id : (profile?.id ?? '')
-  const isTeaching = session.lessonServantId === currentUserId
+  const isTeaching = localSession.lessonServantId === currentUserId
 
   const TODAY = new Date().toISOString().split('T')[0]
   const canTakeAttendance =
     onTakeAttendance &&
     cls &&
     cls.gradeIds.length > 0 &&
-    session.date <= TODAY &&
+    localSession.date <= TODAY &&
     !isCanceled
 
   function handleLocationPress() {
-    if (!session.locationAddress) return
-    const query = encodeURIComponent(session.locationAddress)
+    if (!localSession.locationAddress) return
+    const query = encodeURIComponent(localSession.locationAddress)
     const url = Platform.OS === 'ios'
       ? `maps:?q=${query}`
       : `geo:0,0?q=${query}`
@@ -119,10 +121,12 @@ export default function SessionDetailScreen({
           text: 'Cancel Session',
           style: 'destructive',
           onPress: async (reason: string | undefined) => {
-            const { error } = await onCancelSession(session.id, reason ?? '')
+            const { error } = await onCancelSession(localSession.id, reason ?? '')
             if (error) {
               logger.error('SessionDetailScreen.cancelSession', error)
               Alert.alert('Could not cancel session', 'Please try again.')
+            } else {
+              setLocalSession(prev => ({ ...prev, status: 'canceled', notes: reason || prev.notes }))
             }
           },
         },
@@ -134,12 +138,13 @@ export default function SessionDetailScreen({
   async function handleSaveTopic() {
     if (!onUpdateLessonTopic) return
     setSavingTopic(true)
-    const { error } = await onUpdateLessonTopic(session.id, topicDraft)
+    const { error } = await onUpdateLessonTopic(localSession.id, topicDraft)
     setSavingTopic(false)
     if (error) {
       logger.error('SessionDetailScreen.updateLessonTopic', error)
       Alert.alert('Could not update topic', 'Please try again.')
     } else {
+      setLocalSession(prev => ({ ...prev, lessonTopic: topicDraft }))
       setEditingTopic(false)
     }
   }
@@ -168,13 +173,13 @@ export default function SessionDetailScreen({
                 {savingTopic ? '…' : 'Save'}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => { setEditingTopic(false); setTopicDraft(session.lessonTopic) }} style={{ paddingHorizontal: 4 }}>
+            <TouchableOpacity onPress={() => { setEditingTopic(false); setTopicDraft(localSession.lessonTopic) }} style={{ paddingHorizontal: 4 }}>
               <Text style={{ color: colors.textSecondary, fontSize: 15 }}>✕</Text>
             </TouchableOpacity>
           </View>
         ) : (
           <TouchableOpacity onPress={() => !isCanceled && setEditingTopic(true)} activeOpacity={isCanceled ? 1 : 0.7}>
-            <Text style={styles.title} numberOfLines={3}>{session.lessonTopic || 'TBD'}</Text>
+            <Text style={styles.title} numberOfLines={3}>{localSession.lessonTopic || 'TBD'}</Text>
             {!isCanceled && (
               <Text style={{ fontSize: 11, color: colors.primary, marginTop: 2 }}>Tap to edit topic</Text>
             )}
@@ -190,7 +195,7 @@ export default function SessionDetailScreen({
           {onImportCurriculum && cls && (
             <TouchableOpacity
               style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.inputBackground }}
-              onPress={() => onImportCurriculum(session.classId, cls.name)}
+              onPress={() => onImportCurriculum(localSession.classId, cls.name)}
             >
               <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '600' }}>⬆ Import CSV</Text>
             </TouchableOpacity>
@@ -203,8 +208,8 @@ export default function SessionDetailScreen({
         {isCanceled && (
           <View style={styles.canceledBanner}>
             <Text style={styles.canceledBannerText}>Canceled</Text>
-            {session.notes ? (
-              <Text style={styles.canceledReason}>{session.notes}</Text>
+            {localSession.notes ? (
+              <Text style={styles.canceledReason}>{localSession.notes}</Text>
             ) : null}
           </View>
         )}
@@ -227,9 +232,9 @@ export default function SessionDetailScreen({
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Date & Time</Text>
           <View style={styles.sectionContent}>
-            <Text style={styles.dateText}>{formatFullDate(session.date)}</Text>
+            <Text style={styles.dateText}>{formatFullDate(localSession.date)}</Text>
             <Text style={styles.timeText}>
-              {formatTime(session.startTime)} {'\u2013'} {formatTime(session.endTime)}
+              {formatTime(localSession.startTime)} {'\u2013'} {formatTime(localSession.endTime)}
             </Text>
           </View>
         </View>
@@ -237,21 +242,21 @@ export default function SessionDetailScreen({
         {/* Location */}
         <TouchableOpacity
           style={styles.section}
-          onPress={session.locationAddress ? handleLocationPress : undefined}
-          activeOpacity={session.locationAddress ? 0.7 : 1}
+          onPress={localSession.locationAddress ? handleLocationPress : undefined}
+          activeOpacity={localSession.locationAddress ? 0.7 : 1}
         >
           <Text style={styles.sectionLabel}>Location</Text>
           <View style={styles.sectionContent}>
             <Text style={[
               styles.locationName,
-              session.locationAddress && styles.locationLink,
+              localSession.locationAddress && styles.locationLink,
             ]}>
-              {session.locationName}
+              {localSession.locationName}
             </Text>
-            {session.locationAddress ? (
-              <Text style={styles.locationAddress}>{session.locationAddress}</Text>
+            {localSession.locationAddress ? (
+              <Text style={styles.locationAddress}>{localSession.locationAddress}</Text>
             ) : null}
-            {session.locationAddress ? (
+            {localSession.locationAddress ? (
               <Text style={styles.mapHint}>Tap to open in Maps</Text>
             ) : null}
           </View>
@@ -262,16 +267,16 @@ export default function SessionDetailScreen({
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Lesson Details</Text>
             <View style={styles.sectionContent}>
-              {session.lessonPage ? (
+              {localSession.lessonPage ? (
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Page</Text>
-                  <Text style={styles.infoValue}>{session.lessonPage}</Text>
+                  <Text style={styles.infoValue}>{localSession.lessonPage}</Text>
                 </View>
               ) : null}
-              {session.lessonReference ? (
+              {localSession.lessonReference ? (
                 <View style={styles.infoRow}>
                   <Text style={styles.infoLabel}>Reference</Text>
-                  <Text style={styles.infoValue}>{session.lessonReference}</Text>
+                  <Text style={styles.infoValue}>{localSession.lessonReference}</Text>
                 </View>
               ) : null}
               {lessonServant && (
@@ -298,9 +303,9 @@ export default function SessionDetailScreen({
             </Text>
             <View style={styles.sectionContent}>
               {allServants.map(servant => {
-                const available = isServantAvailable(servant.id, session.date)
-                const isLessonServant = servant.id === session.lessonServantId
-                const isAdmin = servant.id === session.classAdminId
+                const available = isServantAvailable(servant.id, localSession.date)
+                const isLessonServant = servant.id === localSession.lessonServantId
+                const isAdmin = servant.id === localSession.classAdminId
                 return (
                   <View key={servant.id} style={styles.servantRow}>
                     <View style={[
@@ -334,11 +339,11 @@ export default function SessionDetailScreen({
         )}
 
         {/* Notes */}
-        {session.notes && !isCanceled ? (
+        {localSession.notes && !isCanceled ? (
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Notes</Text>
             <View style={styles.sectionContent}>
-              <Text style={styles.notesText}>{session.notes}</Text>
+              <Text style={styles.notesText}>{localSession.notes}</Text>
             </View>
           </View>
         ) : null}

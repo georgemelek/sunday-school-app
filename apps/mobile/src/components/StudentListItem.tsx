@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo } from 'react'
 import { View, Text, TouchableOpacity } from 'react-native'
 import { Student, studentDisplayName } from '../hooks/useStudents'
 import { useThemedStyles, ThemeColors } from '../theme'
@@ -8,7 +8,7 @@ interface StudentListItemProps {
   onPress: () => void
 }
 
-export function StudentListItem({ student, onPress }: StudentListItemProps) {
+export const StudentListItem = memo(function StudentListItem({ student, onPress }: StudentListItemProps) {
   const styles = useThemedStyles(createStyles)
 
   const getAge = (dateOfBirth?: string) => {
@@ -48,7 +48,7 @@ export function StudentListItem({ student, onPress }: StudentListItemProps) {
       <Text style={styles.chevron}>›</Text>
     </TouchableOpacity>
   )
-}
+})
 
 const createStyles = (colors: ThemeColors) => ({
   container: {
