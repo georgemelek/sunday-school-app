@@ -242,22 +242,22 @@ export default function GradeDetailScreen({
           {students.length > 0 && (
             <View style={styles.actionButtons}>
               <TouchableOpacity
-                style={[styles.actionButton, styles.primaryButton]}
+                style={styles.actionButton}
                 onPress={handleTakeAttendance}
               >
-                <Text style={styles.primaryButtonText}>✓ Attendance</Text>
+                <Text style={styles.actionButtonText} numberOfLines={1}>✓ Attendance</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.actionButton, styles.secondaryButton]}
+                style={styles.actionButton}
                 onPress={handleAddStudentPress}
               >
-                <Text style={styles.secondaryButtonText}>+ Add</Text>
+                <Text style={styles.actionButtonText} numberOfLines={1}>+ Add</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.actionButton, styles.secondaryButton]}
+                style={styles.actionButton}
                 onPress={() => onImportStudents?.()}
               >
-                <Text style={styles.secondaryButtonText}>⬆ Import</Text>
+                <Text style={styles.actionButtonText} numberOfLines={1}>⬆ Import</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -351,26 +351,17 @@ const createStyles = (colors: ThemeColors) => ({
   },
   actionButton: {
     flex: 1,
-    padding: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 6,
     borderRadius: 8,
     alignItems: 'center' as const,
-  },
-  primaryButton: {
-    backgroundColor: colors.primary,
-  },
-  primaryButtonText: {
-    color: colors.primaryText,
-    fontSize: 16,
-    fontWeight: '600' as const,
-  },
-  secondaryButton: {
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.primary,
   },
-  secondaryButtonText: {
-    color: colors.onPrimaryText,
-    fontSize: 16,
+  actionButtonText: {
+    color: colors.primary,
+    fontSize: 14,
     fontWeight: '600' as const,
   },
   listContainer: {

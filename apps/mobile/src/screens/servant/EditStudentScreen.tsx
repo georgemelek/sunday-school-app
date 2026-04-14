@@ -23,7 +23,7 @@ export default function EditStudentScreen({
 
   return (
     <StudentFormScreen
-      mode="edit"
+      mode="view"
       gradeId={gradeId}
       gradeName={gradeName}
       student={student}

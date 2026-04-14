@@ -13,7 +13,7 @@ import { Student, StudentFormData, EMPTY_FORM } from '../../hooks/useStudents'
 import { logger } from '../../lib/logger'
 
 interface StudentFormScreenProps {
-  mode: 'add' | 'edit'
+  mode: 'add' | 'edit' | 'view'
   gradeId: string
   gradeName: string
   student?: Student
@@ -46,7 +46,7 @@ function formDataFromStudent(s: Student): StudentFormData {
 }
 
 export default function StudentFormScreen({
-  mode,
+  mode: initialMode,
   gradeId,
   gradeName,
   student,
@@ -56,6 +56,7 @@ export default function StudentFormScreen({
   const styles = useThemedStyles(createStyles)
   const { colors, isDark } = useTheme()
   const keyboardAppearance = isDark ? 'dark' : 'light'
+  const [mode, setMode] = useState<'add' | 'edit' | 'view'>(initialMode)
   const [formData, setFormData] = useState<StudentFormData>(
     student ? formDataFromStudent(student) : EMPTY_FORM
   )
@@ -114,6 +115,16 @@ export default function StudentFormScreen({
       autoCapitalize?: 'none' | 'words' | 'sentences'
     }
   ) {
+    if (mode === 'view') {
+      const value = formData[key]
+      if (!value) return null
+      return (
+        <View style={styles.fieldContainer}>
+          <Text style={styles.label}>{label}</Text>
+          <Text style={styles.viewValue}>{value}</Text>
+        </View>
+      )
+    }
     return (
       <View style={styles.fieldContainer}>
         <Text style={styles.label}>
@@ -138,10 +149,17 @@ export default function StudentFormScreen({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack}>
-          <Text style={styles.backButtonText}>‹ Cancel</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>{mode === 'add' ? 'Add Student' : 'Edit Student'}</Text>
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={mode === 'edit' && initialMode === 'view' ? () => setMode('view') : onBack}>
+            <Text style={styles.backButtonText}>{mode === 'edit' && initialMode === 'view' ? '‹ Cancel' : mode === 'add' ? '‹ Cancel' : '‹ Back'}</Text>
+          </TouchableOpacity>
+          {mode === 'view' && (
+            <TouchableOpacity onPress={() => setMode('edit')}>
+              <Text style={styles.editButtonText}>Edit</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        <Text style={styles.title}>{mode === 'add' ? 'Add Student' : mode === 'view' ? 'Student Details' : 'Edit Student'}</Text>
         <Text style={styles.subtitle}>{gradeName}</Text>
       </View>
 
@@ -153,80 +171,115 @@ export default function StudentFormScreen({
         {field('Last Name', 'last_name', { required: true, placeholder: 'Last name', autoCapitalize: 'words' })}
         {field('Date of Birth', 'date_of_birth', { placeholder: 'YYYY-MM-DD' })}
 
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Gender</Text>
-          <View style={styles.genderRow}>
-            {(['male', 'female'] as const).map(g => (
-              <TouchableOpacity
-                key={g}
-                style={[styles.genderChip, formData.gender === g && styles.genderChipSelected]}
-                onPress={() => updateField('gender', formData.gender === g ? '' : g)}
-                disabled={saving}
-              >
-                <Text style={[styles.genderChipText, formData.gender === g && styles.genderChipTextSelected]}>
-                  {g.charAt(0).toUpperCase() + g.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        {mode === 'view' ? (
+          formData.gender ? (
+            <View style={styles.fieldContainer}>
+              <Text style={styles.label}>Gender</Text>
+              <Text style={styles.viewValue}>{formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1)}</Text>
+            </View>
+          ) : null
+        ) : (
+          <View style={styles.fieldContainer}>
+            <Text style={styles.label}>Gender</Text>
+            <View style={styles.genderRow}>
+              {(['male', 'female'] as const).map(g => (
+                <TouchableOpacity
+                  key={g}
+                  style={[styles.genderChip, formData.gender === g && styles.genderChipSelected]}
+                  onPress={() => updateField('gender', formData.gender === g ? '' : g)}
+                  disabled={saving}
+                >
+                  <Text style={[styles.genderChipText, formData.gender === g && styles.genderChipTextSelected]}>
+                    {g.charAt(0).toUpperCase() + g.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
         {field('Student Phone', 'student_phone', { placeholder: '555-123-4567', keyboardType: 'phone-pad' })}
 
         {/* Mother */}
-        <Text style={styles.sectionHeader}>Mother / Guardian</Text>
-        {field('Mother First Name', 'mother_first_name', { placeholder: 'First name', autoCapitalize: 'words' })}
-        {field('Mother Last Name', 'mother_last_name', { placeholder: 'Last name', autoCapitalize: 'words' })}
-        {field('Mother Phone', 'mother_phone', { placeholder: '555-123-4567', keyboardType: 'phone-pad' })}
-        {field('Mother Email', 'mother_email', { placeholder: 'mother@example.com', keyboardType: 'email-address', autoCapitalize: 'none' })}
+        {(mode !== 'view' || formData.mother_first_name || formData.mother_last_name || formData.mother_phone || formData.mother_email) && (
+          <>
+            <Text style={styles.sectionHeader}>Mother / Guardian</Text>
+            {field('Mother First Name', 'mother_first_name', { placeholder: 'First name', autoCapitalize: 'words' })}
+            {field('Mother Last Name', 'mother_last_name', { placeholder: 'Last name', autoCapitalize: 'words' })}
+            {field('Mother Phone', 'mother_phone', { placeholder: '555-123-4567', keyboardType: 'phone-pad' })}
+            {field('Mother Email', 'mother_email', { placeholder: 'mother@example.com', keyboardType: 'email-address', autoCapitalize: 'none' })}
+          </>
+        )}
 
         {/* Father */}
-        <Text style={styles.sectionHeader}>Father / Guardian</Text>
-        {field('Father First Name', 'father_first_name', { placeholder: 'First name', autoCapitalize: 'words' })}
-        {field('Father Last Name', 'father_last_name', { placeholder: 'Last name', autoCapitalize: 'words' })}
-        {field('Father Phone', 'father_phone', { placeholder: '555-123-4567', keyboardType: 'phone-pad' })}
-        {field('Father Email', 'father_email', { placeholder: 'father@example.com', keyboardType: 'email-address', autoCapitalize: 'none' })}
+        {(mode !== 'view' || formData.father_first_name || formData.father_last_name || formData.father_phone || formData.father_email) && (
+          <>
+            <Text style={styles.sectionHeader}>Father / Guardian</Text>
+            {field('Father First Name', 'father_first_name', { placeholder: 'First name', autoCapitalize: 'words' })}
+            {field('Father Last Name', 'father_last_name', { placeholder: 'Last name', autoCapitalize: 'words' })}
+            {field('Father Phone', 'father_phone', { placeholder: '555-123-4567', keyboardType: 'phone-pad' })}
+            {field('Father Email', 'father_email', { placeholder: 'father@example.com', keyboardType: 'email-address', autoCapitalize: 'none' })}
+          </>
+        )}
 
         {/* Address */}
-        <Text style={styles.sectionHeader}>Address</Text>
-        {field('Street', 'street', { placeholder: '123 Main St', autoCapitalize: 'words' })}
-        {field('City', 'city', { placeholder: 'Naperville', autoCapitalize: 'words' })}
-        {field('State', 'state', { placeholder: 'IL', autoCapitalize: 'words' })}
-        {field('Zip', 'zip', { placeholder: '60540', keyboardType: 'phone-pad' })}
-        {field('Country', 'country', { placeholder: 'USA', autoCapitalize: 'words' })}
+        {(mode !== 'view' || formData.street || formData.city || formData.state || formData.zip) && (
+          <>
+            <Text style={styles.sectionHeader}>Address</Text>
+            {field('Street', 'street', { placeholder: '123 Main St', autoCapitalize: 'words' })}
+            {field('City', 'city', { placeholder: 'Naperville', autoCapitalize: 'words' })}
+            {field('State', 'state', { placeholder: 'IL', autoCapitalize: 'words' })}
+            {field('Zip', 'zip', { placeholder: '60540', keyboardType: 'phone-pad' })}
+            {field('Country', 'country', { placeholder: 'USA', autoCapitalize: 'words' })}
+          </>
+        )}
 
         {/* Notes */}
-        <Text style={styles.sectionHeader}>Notes</Text>
-        <View style={styles.fieldContainer}>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Allergies, medical conditions, anything useful…"
-            placeholderTextColor={colors.textSecondary}
-            value={formData.notes}
-            onChangeText={v => updateField('notes', v)}
-            editable={!saving}
-            multiline
-            numberOfLines={4}
-            textAlignVertical="top"
-            keyboardAppearance={keyboardAppearance}
-          />
-        </View>
-
-        <Text style={styles.requiredNote}><Text style={styles.required}>*</Text> Required</Text>
+        {mode === 'view' ? (
+          formData.notes ? (
+            <>
+              <Text style={styles.sectionHeader}>Notes</Text>
+              <View style={styles.fieldContainer}>
+                <Text style={styles.viewValue}>{formData.notes}</Text>
+              </View>
+            </>
+          ) : null
+        ) : (
+          <>
+            <Text style={styles.sectionHeader}>Notes</Text>
+            <View style={styles.fieldContainer}>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Allergies, medical conditions, anything useful…"
+                placeholderTextColor={colors.textSecondary}
+                value={formData.notes}
+                onChangeText={v => updateField('notes', v)}
+                editable={!saving}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                keyboardAppearance={keyboardAppearance}
+              />
+            </View>
+            <Text style={styles.requiredNote}><Text style={styles.required}>*</Text> Required</Text>
+          </>
+        )}
       </ScrollView>
 
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          {saving
-            ? <ActivityIndicator color={colors.primaryText} />
-            : <Text style={styles.saveButtonText}>{mode === 'add' ? 'Add Student' : 'Save Changes'}</Text>
-          }
-        </TouchableOpacity>
-      </View>
+      {mode !== 'view' && (
+        <View style={styles.footer}>
+          <TouchableOpacity
+            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            {saving
+              ? <ActivityIndicator color={colors.primaryText} />
+              : <Text style={styles.saveButtonText}>{mode === 'add' ? 'Add Student' : 'Save Changes'}</Text>
+            }
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   )
 }
@@ -241,7 +294,14 @@ const createStyles = (colors: ThemeColors) => ({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  backButtonText: { fontSize: 18, color: colors.primary, fontWeight: '600' as const, marginBottom: 8 },
+  headerRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    marginBottom: 8,
+  },
+  backButtonText: { fontSize: 18, color: colors.primary, fontWeight: '600' as const },
+  editButtonText: { fontSize: 17, color: colors.primary, fontWeight: '600' as const },
   title: { fontSize: 28, fontWeight: '700' as const, color: colors.textPrimary },
   subtitle: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
   scrollView: { flex: 1 },
@@ -269,6 +329,7 @@ const createStyles = (colors: ThemeColors) => ({
   },
   inputError: { borderColor: colors.error },
   textArea: { height: 100, paddingTop: 12 },
+  viewValue: { fontSize: 16, color: colors.textPrimary, paddingVertical: 4 },
   errorText: { color: colors.error, fontSize: 12, marginTop: 4 },
   genderRow: { flexDirection: 'row' as const, gap: 12 },
   genderChip: {
