@@ -16,6 +16,7 @@ import type {
   CoordDashboardStackParamList,
   CoordScheduleStackParamList,
   CoordStaffingStackParamList,
+  CoordOutreachStackParamList,
 } from '../types/navigation'
 
 // Auth
@@ -55,6 +56,8 @@ import type { InviteDetails } from '../hooks/useChurch'
 
 // Coordinator screens
 import CoordinatorDashboardScreen from '../screens/coordinator/CoordinatorDashboardScreen'
+import CoordOutreachScreen from '../screens/coordinator/CoordOutreachScreen'
+import CoordOutreachGradeScreen from '../screens/coordinator/CoordOutreachGradeScreen'
 import CoordGradeDetailScreen from '../screens/coordinator/CoordGradeDetailScreen'
 import AttendanceReportScreen from '../screens/coordinator/AttendanceReportScreen'
 import ScheduleScreen from '../screens/coordinator/ScheduleScreen'
@@ -79,6 +82,7 @@ const Tab = createBottomTabNavigator<ServantTabParamList>()
 const CoordDashboardStack = createNativeStackNavigator<CoordDashboardStackParamList>()
 const CoordScheduleStack = createNativeStackNavigator<CoordScheduleStackParamList>()
 const CoordStaffingStack = createNativeStackNavigator<CoordStaffingStackParamList>()
+const CoordOutreachStack = createNativeStackNavigator<CoordOutreachStackParamList>()
 const CoordTab = createBottomTabNavigator<CoordinatorTabParamList>()
 
 // --- Dashboard Tab Stack ---
@@ -815,6 +819,33 @@ function CoordStaffingStackNavigator() {
   )
 }
 
+// --- Coordinator Outreach Stack ---
+
+function CoordOutreachStackNavigator() {
+  return (
+    <CoordOutreachStack.Navigator screenOptions={{ headerShown: false }}>
+      <CoordOutreachStack.Screen name="CoordOutreach">
+        {({ navigation }) => (
+          <CoordOutreachScreen
+            onGradePress={(gradeId, gradeName) =>
+              navigation.navigate('CoordOutreachGrade', { gradeId, gradeName })
+            }
+          />
+        )}
+      </CoordOutreachStack.Screen>
+      <CoordOutreachStack.Screen name="CoordOutreachGrade">
+        {({ navigation, route }) => (
+          <CoordOutreachGradeScreen
+            gradeId={route.params.gradeId}
+            gradeName={route.params.gradeName}
+            onBack={() => navigation.goBack()}
+          />
+        )}
+      </CoordOutreachStack.Screen>
+    </CoordOutreachStack.Navigator>
+  )
+}
+
 // --- Coordinator Tab Navigator ---
 
 function CoordinatorTabNavigator() {
@@ -859,6 +890,16 @@ function CoordinatorTabNavigator() {
           tabBarLabel: 'Staffing',
           tabBarIcon: ({ color }) => (
             <Text style={{ fontSize: 20, color }}>{'\uD83D\uDC65'}</Text>
+          ),
+        }}
+      />
+      <CoordTab.Screen
+        name="OutreachTab"
+        component={CoordOutreachStackNavigator}
+        options={{
+          tabBarLabel: 'Outreach',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 20, color }}>{'\uD83D\uDC9A'}</Text>
           ),
         }}
       />

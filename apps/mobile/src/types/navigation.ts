@@ -82,6 +82,7 @@ export type CoordinatorTabParamList = {
   DashboardTab: undefined
   ScheduleTab: undefined
   StaffingTab: undefined
+  OutreachTab: undefined
   SettingsTab: undefined
 }
 
@@ -106,6 +107,13 @@ export type CoordScheduleStackParamList = {
 
 export type CoordStaffingStackParamList = {
   Staffing: undefined
+}
+
+// --- Coordinator Outreach Stack ---
+
+export type CoordOutreachStackParamList = {
+  CoordOutreach: undefined
+  CoordOutreachGrade: { gradeId: string; gradeName: string }
 }
 
 // --- Coordinator nav prop types ---

@@ -772,3 +772,142 @@ export function useOutreachManagement() {
     bulkAssign,
   }
 }
+
+// ─── useCoordinatorOutreach ───────────────────────────────────────────────────
+
+export interface CoordOutreachKid {
+  studentId: string
+  firstName: string
+  lastName: string
+  visited: boolean
+}
+
+export interface CoordOutreachServant {
+  servantId: string
+  servantName: string
+  totalKids: number
+  visitedKids: number
+  kids: CoordOutreachKid[]
+}
+
+export interface CoordOutreachGrade {
+  gradeId: string
+  gradeName: string
+  servants: CoordOutreachServant[]
+  totalKids: number
+  visitedKids: number
+}
+
+export function useCoordinatorOutreach() {
+  // TODO: Scope by coordinator_grades junction table (per-ministry) once that table exists.
+  // Currently fetches all grades in the coordinator's church (church-wide), meaning
+  // coordinators from different ministries (e.g. elementary vs. middle school) will see
+  // each other's outreach data. Fix by adding coordinator_grades and filtering here.
+  const { profile } = useAuth()
+  const [grades, setGrades] = useState<CoordOutreachGrade[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetch = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      if (!profile?.church_id) {
+        setGrades([])
+        return
+      }
+
+      // 1. All grades in the church
+      const { data: gradeRows, error: gradeError } = await supabase
+        .from(TABLES.GRADES)
+        .select('id, name')
+        .eq('church_id', profile.church_id)
+        .order('name')
+      if (gradeError) throw gradeError
+      if (!gradeRows?.length) { setGrades([]); return }
+
+      const gradeIds = gradeRows.map((g: any) => g.id as string)
+
+      // 2. All students in those grades (with names)
+      const { data: studentRows, error: studentError } = await supabase
+        .from(TABLES.STUDENTS)
+        .select('id, grade_id, first_name, last_name')
+        .in('grade_id', gradeIds)
+      if (studentError) throw studentError
+      const studentIds = (studentRows ?? []).map((s: any) => s.id as string)
+      const studentGradeMap: Record<string, string> = {}
+      const studentNameMap: Record<string, { first: string; last: string }> = {}
+      for (const s of studentRows ?? []) {
+        if (s.grade_id) studentGradeMap[s.id] = s.grade_id
+        studentNameMap[s.id] = { first: s.first_name ?? '', last: s.last_name ?? '' }
+      }
+
+      // 3. All active outreach assignments for those students (with servant profiles)
+      type AssignRow = { id: string; servant_id: string | null; student_id: string; profiles: { full_name: string | null } | null }
+      const { data: assignRows, error: assignError } = studentIds.length
+        ? await supabase
+            .from(TABLES.OUTREACH_ASSIGNMENTS)
+            .select('id, servant_id, student_id, profiles(full_name)')
+            .in('student_id', studentIds)
+            .eq('status', 'active')
+        : { data: [] as AssignRow[], error: null }
+      if (assignError) throw assignError
+      const typedAssigns = (assignRows ?? []) as AssignRow[]
+
+      // 4. Which assignments have at least one visit
+      const assignIds = typedAssigns.map(a => a.id)
+      const { data: visitRows } = assignIds.length
+        ? await supabase
+            .from(TABLES.OUTREACH_VISITS)
+            .select('assignment_id')
+            .in('assignment_id', assignIds)
+        : { data: [] }
+      const visitedSet = new Set((visitRows ?? []).map((v: any) => v.assignment_id as string))
+
+      // 5. Build grade → servant → stats + kids map
+      type ServantStats = { name: string; total: number; visited: number; kids: CoordOutreachKid[] }
+      const gradeServantMap: Record<string, Record<string, ServantStats>> = {}
+      for (const g of gradeRows) gradeServantMap[g.id] = {}
+
+      for (const row of typedAssigns) {
+        const gradeId = studentGradeMap[row.student_id]
+        if (!gradeId || !row.servant_id) continue
+        const svMap = gradeServantMap[gradeId]
+        if (!svMap) continue
+        if (!svMap[row.servant_id]) {
+          svMap[row.servant_id] = { name: row.profiles?.full_name ?? 'Unknown', total: 0, visited: 0, kids: [] }
+        }
+        const wasVisited = visitedSet.has(row.id)
+        const names = studentNameMap[row.student_id] ?? { first: '', last: '' }
+        svMap[row.servant_id].kids.push({ studentId: row.student_id, firstName: names.first, lastName: names.last, visited: wasVisited })
+        svMap[row.servant_id].total++
+        if (wasVisited) svMap[row.servant_id].visited++
+      }
+
+      const result: CoordOutreachGrade[] = gradeRows.map((g: any) => {
+        const svMap = gradeServantMap[g.id]
+        const servants: CoordOutreachServant[] = Object.entries(svMap).map(([servantId, stats]) => ({
+          servantId,
+          servantName: stats.name,
+          totalKids: stats.total,
+          visitedKids: stats.visited,
+          kids: stats.kids.sort((a, b) => a.firstName.localeCompare(b.firstName)),
+        })).sort((a, b) => a.servantName.localeCompare(b.servantName))
+        const totalKids = servants.reduce((s, sv) => s + sv.totalKids, 0)
+        const visitedKids = servants.reduce((s, sv) => s + sv.visitedKids, 0)
+        return { gradeId: g.id, gradeName: g.name, servants, totalKids, visitedKids }
+      })
+
+      setGrades(result)
+    } catch (err: any) {
+      setError(err.message ?? 'Failed to load outreach data')
+      setGrades([])
+    } finally {
+      setLoading(false)
+    }
+  }, [profile?.church_id])
+
+  useEffect(() => { fetch() }, [fetch])
+
+  return { grades, loading, error, refetch: fetch }
+}
