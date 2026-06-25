@@ -17,6 +17,7 @@ import type {
   CoordScheduleStackParamList,
   CoordStaffingStackParamList,
   CoordOutreachStackParamList,
+  MessagingStackParamList,
 } from '../types/navigation'
 
 // Auth
@@ -69,6 +70,10 @@ import ImportSessionsScreen from '../screens/coordinator/ImportSessionsScreen'
 import { useClasses } from '../hooks/useClasses'
 import { supabase } from '../lib/supabase'
 
+// Messaging screens
+import ChannelListScreen from '../screens/messaging/ChannelListScreen'
+import ChannelScreen from '../screens/messaging/ChannelScreen'
+
 // --- Stack / Tab Navigators ---
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>()
@@ -83,6 +88,7 @@ const CoordDashboardStack = createNativeStackNavigator<CoordDashboardStackParamL
 const CoordScheduleStack = createNativeStackNavigator<CoordScheduleStackParamList>()
 const CoordStaffingStack = createNativeStackNavigator<CoordStaffingStackParamList>()
 const CoordOutreachStack = createNativeStackNavigator<CoordOutreachStackParamList>()
+const MessagingStack = createNativeStackNavigator<MessagingStackParamList>()
 const CoordTab = createBottomTabNavigator<CoordinatorTabParamList>()
 
 // --- Dashboard Tab Stack ---
@@ -673,6 +679,16 @@ function ServantTabNavigator({ isTourMode, onSignIn }: { isTourMode?: boolean; o
         }}
       />
       <Tab.Screen
+        name="MessagingTab"
+        component={MessagingStackNavigator}
+        options={{
+          tabBarLabel: 'Messages',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCAC'}</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
         name="SettingsTab"
         options={{
           tabBarLabel: 'Settings',
@@ -809,6 +825,32 @@ function CoordScheduleStackNavigator() {
   )
 }
 
+// --- Messaging Stack (shared by servant + coordinator) ---
+
+function MessagingStackNavigator() {
+  return (
+    <MessagingStack.Navigator screenOptions={{ headerShown: false }}>
+      <MessagingStack.Screen name="ChannelList">
+        {({ navigation }) => (
+          <ChannelListScreen
+            onChannelPress={(channelCid) =>
+              navigation.navigate('Channel', { channelCid })
+            }
+          />
+        )}
+      </MessagingStack.Screen>
+      <MessagingStack.Screen name="Channel">
+        {({ navigation, route }) => (
+          <ChannelScreen
+            channelCid={route.params.channelCid}
+            onBack={() => navigation.goBack()}
+          />
+        )}
+      </MessagingStack.Screen>
+    </MessagingStack.Navigator>
+  )
+}
+
 // --- Coordinator Staffing Stack ---
 
 function CoordStaffingStackNavigator() {
@@ -900,6 +942,16 @@ function CoordinatorTabNavigator() {
           tabBarLabel: 'Outreach',
           tabBarIcon: ({ color }) => (
             <Text style={{ fontSize: 20, color }}>{'\uD83D\uDC9A'}</Text>
+          ),
+        }}
+      />
+      <CoordTab.Screen
+        name="MessagingTab"
+        component={MessagingStackNavigator}
+        options={{
+          tabBarLabel: 'Messages',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCAC'}</Text>
           ),
         }}
       />

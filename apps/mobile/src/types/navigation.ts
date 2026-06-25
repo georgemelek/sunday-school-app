@@ -11,7 +11,13 @@ export type ServantTabParamList = {
   GradesTab: undefined
   AvailabilityTab: undefined
   OutreachTab: undefined
+  MessagingTab: undefined
   SettingsTab: undefined
+}
+
+export type MessagingStackParamList = {
+  ChannelList: undefined
+  Channel: { channelCid: string }
 }
 
 // --- Dashboard Stack ---
@@ -83,6 +89,7 @@ export type CoordinatorTabParamList = {
   ScheduleTab: undefined
   StaffingTab: undefined
   OutreachTab: undefined
+  MessagingTab: undefined
   SettingsTab: undefined
 }
 
