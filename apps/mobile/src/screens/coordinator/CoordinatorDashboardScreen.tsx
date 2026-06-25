@@ -8,37 +8,28 @@ import {
   TouchableOpacity,
 } from 'react-native'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
-import { useCoordinatorStats, ClassSummary } from '../../hooks/useCoordinatorStats'
-
-function getClassTypeColors(colors: ThemeColors): Record<string, string> {
-  return {
-    'Sunday School': colors.classSundaySchool,
-    'Small Group': colors.classSmallGroup,
-    'FNA': colors.classFNA,
-    'Bible Study': colors.classBibleStudy,
-  }
-}
+import { useCoordinatorStats } from '../../hooks/useCoordinatorStats'
+import type { GradeWithStats } from '../../hooks/useGrades'
 
 interface CoordinatorDashboardScreenProps {
-  onClassPress?: (classId: string) => void
+  onGradePress?: (gradeId: string, gradeName: string) => void
   onViewReport?: () => void
   onViewStaffing?: () => void
 }
 
 export default function CoordinatorDashboardScreen({
-  onClassPress,
+  onGradePress,
   onViewReport,
   onViewStaffing,
 }: CoordinatorDashboardScreenProps) {
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
-  const CLASS_TYPE_COLORS = getClassTypeColors(colors)
 
   const {
     totalStudents,
     totalClasses,
     overallAttendanceRate,
-    classSummaries,
+    grades,
     upcomingGaps,
     loading,
     error,
@@ -48,7 +39,10 @@ export default function CoordinatorDashboardScreen({
   const greeting = getGreeting()
 
   function renderHeader() {
-    const attendanceColor = overallAttendanceRate >= 80 ? colors.success : overallAttendanceRate >= 60 ? colors.warning : colors.error
+    const attendanceColor =
+      overallAttendanceRate >= 80 ? colors.success
+      : overallAttendanceRate >= 60 ? colors.warning
+      : colors.error
 
     return (
       <View>
@@ -62,15 +56,15 @@ export default function CoordinatorDashboardScreen({
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{totalStudents}</Text>
-            <Text style={styles.statLabel}>Total Students</Text>
+            <Text style={styles.statLabel}>Students</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>{totalClasses}</Text>
-            <Text style={styles.statLabel}>Total Classes</Text>
+            <Text style={styles.statLabel}>Classes</Text>
           </View>
           <TouchableOpacity style={styles.statCard} onPress={onViewReport}>
             <Text style={[styles.statNumber, { color: attendanceColor }]}>{overallAttendanceRate}%</Text>
-            <Text style={styles.statLabel}>Attendance Rate</Text>
+            <Text style={styles.statLabel}>Attendance</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.statCard} onPress={onViewStaffing}>
             <Text style={[styles.statNumber, upcomingGaps.length > 0 && { color: colors.error }]}>
@@ -94,45 +88,45 @@ export default function CoordinatorDashboardScreen({
           </View>
         )}
 
-        {/* Section title */}
-        <Text style={styles.sectionTitle}>Your Classes</Text>
+        <Text style={styles.sectionTitle}>Grades</Text>
       </View>
     )
   }
 
-  function renderClassCard({ item }: { item: ClassSummary }) {
-    const tagColor = CLASS_TYPE_COLORS[item.classTypeName] || colors.primary
+  function renderGradeCard({ item }: { item: GradeWithStats }) {
+    const rate = item.recent_attendance_rate
+    const rateColor =
+      rate == null ? colors.textMuted
+      : rate >= 80 ? colors.success
+      : rate >= 60 ? colors.warning
+      : colors.error
+    const rateBg =
+      rate == null ? colors.borderLight
+      : rate >= 80 ? colors.alertSuccessBg
+      : rate >= 60 ? colors.alertOrangeBg
+      : colors.alertDangerBg
 
     return (
       <TouchableOpacity
-        style={styles.classCard}
-        activeOpacity={onClassPress ? 0.7 : 1}
-        onPress={onClassPress ? () => onClassPress(item.classId) : undefined}
+        style={styles.gradeCard}
+        activeOpacity={onGradePress ? 0.7 : 1}
+        onPress={onGradePress ? () => onGradePress(item.id, item.name) : undefined}
       >
-        <View style={styles.classCardTop}>
-          <Text style={styles.className} numberOfLines={1}>{item.className}</Text>
-          {item.classTypeName ? (
-            <View style={[styles.tag, { backgroundColor: tagColor + '18' }]}>
-              <Text style={[styles.tagText, { color: tagColor }]}>{item.classTypeName}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        <View style={styles.classCardDetails}>
-          <Text style={styles.classDetailText}>
-            {item.servantCount} servant{item.servantCount !== 1 ? 's' : ''}
+        <View style={styles.gradeCardLeft}>
+          <Text style={styles.gradeName}>{item.name}</Text>
+          <Text style={styles.gradeDetail}>
+            {item.student_count} student{item.student_count !== 1 ? 's' : ''}
           </Text>
-          {item.nextSessionDate && (
-            <Text style={styles.classDetailText} numberOfLines={1}>
-              Next: {formatShortDate(item.nextSessionDate)} — {item.nextSessionTopic}
-            </Text>
-          )}
-          {!item.nextSessionDate && (
-            <Text style={styles.classDetailMuted}>No upcoming sessions</Text>
-          )}
         </View>
 
-        <Text style={styles.chevron}>{'\u203A'}</Text>
+        <View style={styles.gradeCardRight}>
+          {rate != null && (
+            <View style={[styles.rateBadge, { backgroundColor: rateBg }]}>
+              <Text style={[styles.rateText, { color: rateColor }]}>{rate}%</Text>
+            </View>
+          )}
+          <Text style={styles.chevron}>{'\u203A'}</Text>
+        </View>
       </TouchableOpacity>
     )
   }
@@ -141,13 +135,13 @@ export default function CoordinatorDashboardScreen({
     if (loading) return null
     return (
       <View style={styles.emptyState}>
-        <Text style={styles.emptyTitle}>No classes found</Text>
-        <Text style={styles.emptyText}>Classes will appear here once configured</Text>
+        <Text style={styles.emptyTitle}>No grades found</Text>
+        <Text style={styles.emptyText}>Grades will appear here once servants set them up</Text>
       </View>
     )
   }
 
-  if (loading && classSummaries.length === 0) {
+  if (loading && grades.length === 0) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
@@ -167,9 +161,9 @@ export default function CoordinatorDashboardScreen({
       </View>
 
       <FlatList
-        data={classSummaries}
-        keyExtractor={item => item.classId}
-        renderItem={renderClassCard}
+        data={grades}
+        keyExtractor={item => item.id}
+        renderItem={renderGradeCard}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
@@ -191,7 +185,7 @@ function getGreeting(): string {
 function formatTodayDate(): string {
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-  const d = new Date('2026-02-23T12:00:00')
+  const d = new Date()
   return `${days[d.getDay()]}, ${months[d.getMonth()]} ${d.getDate()}`
 }
 
@@ -309,59 +303,51 @@ const createStyles = (colors: ThemeColors) => ({
     marginBottom: 12,
   },
 
-  // Class cards
-  classCard: {
+  // Grade cards
+  gradeCard: {
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
+    marginBottom: 10,
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 3,
+    elevation: 1,
     borderWidth: 1,
     borderColor: colors.borderLight,
   },
-  classCardTop: {
-    flexDirection: 'row' as const,
-    justifyContent: 'space-between' as const,
-    alignItems: 'center' as const,
-    marginBottom: 8,
-    gap: 10,
-  },
-  className: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: colors.textPrimary,
+  gradeCardLeft: {
     flex: 1 as const,
   },
-  tag: {
+  gradeCardRight: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+  },
+  gradeName: {
+    fontSize: 17,
+    fontWeight: '600' as const,
+    color: colors.textPrimary,
+    marginBottom: 3,
+  },
+  gradeDetail: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  rateBadge: {
     paddingHorizontal: 10,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 10,
   },
-  tagText: {
-    fontSize: 12,
+  rateText: {
+    fontSize: 13,
     fontWeight: '600' as const,
   },
-  classCardDetails: {
-    gap: 4,
-  },
-  classDetailText: {
-    fontSize: 14,
-    color: colors.textDetail,
-  },
-  classDetailMuted: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontStyle: 'italic' as const,
-  },
   chevron: {
-    position: 'absolute' as const,
-    right: 16,
-    top: '50%' as const,
-    fontSize: 24,
+    fontSize: 22,
     color: colors.chevron,
     fontWeight: '300' as const,
   },

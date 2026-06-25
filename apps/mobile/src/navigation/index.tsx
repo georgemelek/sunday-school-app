@@ -1,5 +1,5 @@
-import React from 'react'
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Linking } from 'react-native'
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
@@ -46,8 +46,16 @@ import OutreachManageScreen from '../screens/servant/OutreachManageScreen'
 import { useOutreach } from '../hooks/useOutreach'
 import { useSessions } from '../hooks/useSessions'
 
+// Church screens
+import ChurchSelectionScreen from '../screens/church/ChurchSelectionScreen'
+import InviteServantsScreen from '../screens/church/InviteServantsScreen'
+import JoinChurchModal from '../components/JoinChurchModal'
+import { useChurch } from '../hooks/useChurch'
+import type { InviteDetails } from '../hooks/useChurch'
+
 // Coordinator screens
 import CoordinatorDashboardScreen from '../screens/coordinator/CoordinatorDashboardScreen'
+import CoordGradeDetailScreen from '../screens/coordinator/CoordGradeDetailScreen'
 import AttendanceReportScreen from '../screens/coordinator/AttendanceReportScreen'
 import ScheduleScreen from '../screens/coordinator/ScheduleScreen'
 import SessionListScreen from '../screens/coordinator/SessionListScreen'
@@ -56,6 +64,7 @@ import StaffingScreen from '../screens/coordinator/StaffingScreen'
 import ImportSessionsScreen from '../screens/coordinator/ImportSessionsScreen'
 
 import { useClasses } from '../hooks/useClasses'
+import { supabase } from '../lib/supabase'
 
 // --- Stack / Tab Navigators ---
 
@@ -313,10 +322,21 @@ function OutreachStackNavigator() {
 
 // --- Settings Screen ---
 
-function SettingsScreen({ isTourMode, onSignIn }: { isTourMode?: boolean; onSignIn?: () => void }) {
+function SettingsScreen({
+  isTourMode,
+  onSignIn,
+  onInviteServants,
+}: {
+  isTourMode?: boolean
+  onSignIn?: () => void
+  onInviteServants?: () => void
+}) {
   const { colors, preference, setPreference } = useTheme()
   const { session, profile, signOut } = useAuth()
+  const { leaveChurch } = useChurch()
   const styles = useThemedStyles(createSettingsStyles)
+
+  const isCoordinator = profile?.role === 'coordinator' || profile?.role === 'priest'
 
   const themeOptions: { key: ThemePreference; label: string }[] = [
     { key: 'system', label: 'System' },
@@ -330,6 +350,24 @@ function SettingsScreen({ isTourMode, onSignIn }: { isTourMode?: boolean; onSign
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to sign out')
     }
+  }
+
+  function handleLeaveChurch() {
+    Alert.alert(
+      'Leave Church',
+      'You will be disconnected from your church. Your grades and classes will remain but will no longer be visible to your coordinator.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Leave',
+          style: 'destructive',
+          onPress: async () => {
+            const { error } = await leaveChurch()
+            if (error) Alert.alert('Error', error)
+          },
+        },
+      ]
+    )
   }
 
   return (
@@ -348,6 +386,9 @@ function SettingsScreen({ isTourMode, onSignIn }: { isTourMode?: boolean; onSign
             <Text style={styles.profileRole}>
               {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
             </Text>
+            {profile.church_id && (
+              <Text style={styles.profileDetail}>Church linked</Text>
+            )}
           </View>
         </View>
       )}
@@ -359,6 +400,19 @@ function SettingsScreen({ isTourMode, onSignIn }: { isTourMode?: boolean; onSign
             <Text style={styles.tourBannerText}>
               You're exploring the app in demo mode. Sign in to access your real data.
             </Text>
+          </View>
+        </View>
+      )}
+
+      {/* Coordinator: Invite Servants */}
+      {session && profile && isCoordinator && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Ministry</Text>
+          <View style={styles.optionGroup}>
+            <TouchableOpacity style={[styles.optionRow, { borderBottomWidth: 0 }]} onPress={onInviteServants}>
+              <Text style={styles.optionLabel}>Invite Servants</Text>
+              <Text style={styles.chevron}>{'\u203A'}</Text>
+            </TouchableOpacity>
           </View>
         </View>
       )}
@@ -383,6 +437,17 @@ function SettingsScreen({ isTourMode, onSignIn }: { isTourMode?: boolean; onSign
           ))}
         </View>
       </View>
+
+      {/* Leave Church */}
+      {session && profile?.church_id && (
+        <View style={styles.section}>
+          <View style={styles.optionGroup}>
+            <TouchableOpacity style={[styles.optionRow, { borderBottomWidth: 0 }]} onPress={handleLeaveChurch}>
+              <Text style={[styles.optionLabel, { color: colors.error }]}>Leave Church</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {/* Sign Out / Sign In */}
       <View style={styles.section}>
@@ -519,13 +584,28 @@ const createSettingsStyles = (colors: ThemeColors) => ({
     fontSize: 16,
     fontWeight: '600' as const,
   },
+  chevron: {
+    fontSize: 22,
+    color: colors.chevron,
+  },
 })
 
 function SettingsStackNavigator({ isTourMode, onSignIn }: { isTourMode?: boolean; onSignIn?: () => void }) {
   return (
     <SettingsStack.Navigator screenOptions={{ headerShown: false }}>
       <SettingsStack.Screen name="Settings">
-        {() => <SettingsScreen isTourMode={isTourMode} onSignIn={onSignIn} />}
+        {({ navigation }) => (
+          <SettingsScreen
+            isTourMode={isTourMode}
+            onSignIn={onSignIn}
+            onInviteServants={() => navigation.navigate('InviteServants')}
+          />
+        )}
+      </SettingsStack.Screen>
+      <SettingsStack.Screen name="InviteServants">
+        {({ navigation }) => (
+          <InviteServantsScreen onBack={() => navigation.goBack()} />
+        )}
       </SettingsStack.Screen>
     </SettingsStack.Navigator>
   )
@@ -606,17 +686,35 @@ function ServantTabNavigator({ isTourMode, onSignIn }: { isTourMode?: boolean; o
 // --- Coordinator Dashboard Stack ---
 
 function CoordDashboardStackNavigator() {
+  const { getClassById, getServantsByClassId } = useClasses()
+
   return (
     <CoordDashboardStack.Navigator screenOptions={{ headerShown: false }}>
       <CoordDashboardStack.Screen name="Dashboard">
         {({ navigation }) => (
           <CoordinatorDashboardScreen
-            onClassPress={(classId) => {
-              navigation.getParent()?.navigate('ScheduleTab')
-            }}
+            onGradePress={(gradeId, gradeName) =>
+              navigation.navigate('GradeDetail', { gradeId, gradeName })
+            }
             onViewReport={() => navigation.navigate('AttendanceReport')}
             onViewStaffing={() => {
               navigation.getParent()?.navigate('StaffingTab')
+            }}
+          />
+        )}
+      </CoordDashboardStack.Screen>
+
+      <CoordDashboardStack.Screen name="GradeDetail">
+        {({ navigation, route }) => (
+          <CoordGradeDetailScreen
+            gradeId={route.params.gradeId}
+            gradeName={route.params.gradeName}
+            onBack={() => navigation.goBack()}
+            onClassPress={(classId, className) => {
+              navigation.getParent()?.navigate('ScheduleTab', {
+                screen: 'SessionList',
+                params: { classId, className },
+              })
             }}
           />
         )}
@@ -798,6 +896,46 @@ export default function RootNavigator() {
   const { session, profile, loading, refreshProfile } = useAuth()
   const { colors, isDark } = useTheme()
   const { isTourMode, startTour, endTour } = useTour()
+  const { validateInvite } = useChurch()
+
+  // Deep link invite handling
+  const [pendingInvite, setPendingInvite] = useState<InviteDetails | null>(null)
+  const [gradeCount, setGradeCount] = useState(0)
+  const [classCount, setClassCount] = useState(0)
+  const handledUrls = useRef(new Set<string>())
+
+  async function handleInviteUrl(url: string) {
+    const match = url.match(/ministryhub:\/\/invite\/([A-Z0-9]+)/i)
+    if (!match) return
+    const code = match[1].toUpperCase()
+    if (handledUrls.current.has(code)) return
+    handledUrls.current.add(code)
+
+    const { details, error } = await validateInvite(code)
+    if (!details) {
+      Alert.alert('Invalid Invite', error ?? 'This invite link is no longer valid')
+      return
+    }
+
+    // Count servant's existing grades + classes to decide whether to show transfer prompt
+    const userId = session?.user?.id
+    if (userId) {
+      const [{ count: gc }, { count: cc }] = await Promise.all([
+        supabase.from('grades').select('id', { count: 'exact', head: true }).eq('created_by', userId),
+        supabase.from('classes').select('id', { count: 'exact', head: true }).eq('created_by', userId),
+      ])
+      setGradeCount(gc ?? 0)
+      setClassCount(cc ?? 0)
+    }
+
+    setPendingInvite(details)
+  }
+
+  useEffect(() => {
+    Linking.getInitialURL().then(url => { if (url) handleInviteUrl(url) })
+    const sub = Linking.addEventListener('url', ({ url }) => handleInviteUrl(url))
+    return () => sub.remove()
+  }, [session?.user?.id])
 
   const navTheme = isDark
     ? { ...DarkTheme, colors: { ...DarkTheme.colors, background: colors.background, card: colors.card } }
@@ -812,7 +950,7 @@ export default function RootNavigator() {
     )
   }
 
-  // Tour mode — show servant tab navigator with mock data
+  // Tour mode — show servant tab navigator with mock data (bypasses church_id gate)
   if (!session && isTourMode) {
     return (
       <NavigationContainer theme={navTheme}>
@@ -850,18 +988,46 @@ export default function RootNavigator() {
     )
   }
 
+  // No church linked yet — show church selection full-screen
+  if (!profile.church_id) {
+    return (
+      <ChurchSelectionScreen onComplete={refreshProfile} />
+    )
+  }
+
+  // Invite modal (shown on top of whatever tab nav is active)
+  const inviteModal = pendingInvite ? (
+    <JoinChurchModal
+      visible
+      details={pendingInvite}
+      gradeCount={gradeCount}
+      classCount={classCount}
+      onDismiss={() => setPendingInvite(null)}
+      onJoined={() => {
+        setPendingInvite(null)
+        refreshProfile()
+      }}
+    />
+  ) : null
+
   // Authenticated with profile — route by role
   if (profile.role === 'coordinator' || profile.role === 'priest') {
     return (
-      <NavigationContainer theme={navTheme}>
-        <CoordinatorTabNavigator />
-      </NavigationContainer>
+      <>
+        <NavigationContainer theme={navTheme}>
+          <CoordinatorTabNavigator />
+        </NavigationContainer>
+        {inviteModal}
+      </>
     )
   }
 
   return (
-    <NavigationContainer theme={navTheme}>
-      <ServantTabNavigator />
-    </NavigationContainer>
+    <>
+      <NavigationContainer theme={navTheme}>
+        <ServantTabNavigator />
+      </NavigationContainer>
+      {inviteModal}
+    </>
   )
 }

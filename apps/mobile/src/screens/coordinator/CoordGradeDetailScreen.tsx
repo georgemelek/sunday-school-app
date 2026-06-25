@@ -1,14 +1,15 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import {
   View,
   Text,
   FlatList,
+  TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  TouchableOpacity,
 } from 'react-native'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useClasses } from '../../hooks/useClasses'
+import { useSessions } from '../../hooks/useSessions'
 import type { ClassInfo } from '../../data/mockData'
 
 const DAYS = ['Sundays', 'Mondays', 'Tuesdays', 'Wednesdays', 'Thursdays', 'Fridays', 'Saturdays']
@@ -22,16 +23,40 @@ function getClassTypeColors(colors: ThemeColors): Record<string, string> {
   }
 }
 
-interface ScheduleScreenProps {
-  onClassPress?: (classId: string, className: string) => void
+interface CoordGradeDetailScreenProps {
+  gradeId: string
+  gradeName: string
+  onBack: () => void
+  onClassPress: (classId: string, className: string) => void
 }
 
-export default function ScheduleScreen({ onClassPress }: ScheduleScreenProps) {
+export default function CoordGradeDetailScreen({
+  gradeId,
+  gradeName,
+  onBack,
+  onClassPress,
+}: CoordGradeDetailScreenProps) {
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
   const CLASS_TYPE_COLORS = getClassTypeColors(colors)
 
-  const { classes, classTypes, loading, error, refetch } = useClasses()
+  const { classes, classTypes, loading: classesLoading, error, refetch: refetchClasses } = useClasses()
+
+  // Filter classes to only those that include this grade
+  const gradeClasses = useMemo(
+    () => classes.filter(c => c.gradeIds.includes(gradeId)),
+    [classes, gradeId]
+  )
+
+  const classIds = useMemo(() => gradeClasses.map(c => c.id), [gradeClasses])
+  const { sessions, loading: sessionsLoading, refetch: refetchSessions } = useSessions(undefined, classIds)
+
+  const loading = classesLoading || sessionsLoading
+
+  function refetch() {
+    refetchClasses()
+    refetchSessions()
+  }
 
   function formatTime(time: string | null | undefined): string {
     if (!time) return '—'
@@ -42,17 +67,33 @@ export default function ScheduleScreen({ onClassPress }: ScheduleScreenProps) {
     return m === 0 ? `${hour} ${period}` : `${hour}:${m.toString().padStart(2, '0')} ${period}`
   }
 
+  function getNextSession(classId: string) {
+    const today = new Date().toISOString().split('T')[0]
+    return sessions
+      .filter(s => s.classId === classId && s.date >= today && s.status !== 'canceled')
+      .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null
+  }
+
+  function formatShortDate(dateStr: string): string {
+    const d = new Date(dateStr + 'T12:00:00')
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    return `${months[d.getMonth()]} ${d.getDate()}`
+  }
+
   function renderClassCard({ item }: { item: ClassInfo }) {
     const classType = classTypes.find(ct => ct.id === item.classTypeId)
     const tagColor = CLASS_TYPE_COLORS[classType?.name || ''] || colors.primary
-    const dayLabel = DAYS[item.defaultDayOfWeek] || ''
-    const timeLabel = `${formatTime(item.defaultStartTime)} \u2013 ${formatTime(item.defaultEndTime)}`
+    const dayLabel = item.defaultDayOfWeek != null ? DAYS[item.defaultDayOfWeek] : ''
+    const timeLabel = (item.defaultStartTime && item.defaultEndTime)
+      ? `${formatTime(item.defaultStartTime)} – ${formatTime(item.defaultEndTime)}`
+      : null
+    const next = getNextSession(item.id)
 
     return (
       <TouchableOpacity
         style={styles.classCard}
-        activeOpacity={onClassPress ? 0.7 : 1}
-        onPress={onClassPress ? () => onClassPress(item.id, item.name) : undefined}
+        activeOpacity={0.7}
+        onPress={() => onClassPress(item.id, item.name)}
       >
         <View style={styles.cardTop}>
           <Text style={styles.className} numberOfLines={1}>{item.name}</Text>
@@ -63,20 +104,36 @@ export default function ScheduleScreen({ onClassPress }: ScheduleScreenProps) {
           )}
         </View>
 
-        <View style={styles.detailRow}>
-          <Text style={styles.detailIcon}>{'\uD83D\uDCC5'}</Text>
-          <Text style={styles.detailText}>{dayLabel} {timeLabel}</Text>
-        </View>
+        {(dayLabel || timeLabel) && (
+          <View style={styles.detailRow}>
+            <Text style={styles.detailIcon}>{'\uD83D\uDCC5'}</Text>
+            <Text style={styles.detailText}>
+              {[dayLabel, timeLabel].filter(Boolean).join(' · ')}
+            </Text>
+          </View>
+        )}
 
-        <View style={styles.detailRow}>
-          <Text style={styles.detailIcon}>{'\uD83D\uDCCD'}</Text>
-          <Text style={styles.detailText} numberOfLines={1}>{item.defaultLocation}</Text>
-        </View>
+        {item.defaultLocation ? (
+          <View style={styles.detailRow}>
+            <Text style={styles.detailIcon}>{'\uD83D\uDCCD'}</Text>
+            <Text style={styles.detailText} numberOfLines={1}>{item.defaultLocation}</Text>
+          </View>
+        ) : null}
 
         <View style={styles.detailRow}>
           <Text style={styles.detailIcon}>{'\uD83D\uDC65'}</Text>
-          <Text style={styles.detailText}>{item.servantIds.length} servants</Text>
+          <Text style={styles.detailText}>{item.servantIds.length} servant{item.servantIds.length !== 1 ? 's' : ''}</Text>
         </View>
+
+        {next ? (
+          <View style={styles.nextSession}>
+            <Text style={styles.nextSessionText}>
+              Next: {formatShortDate(next.date)}{next.lessonTopic ? ` — ${next.lessonTopic}` : ''}
+            </Text>
+          </View>
+        ) : (
+          <Text style={styles.noSessions}>No upcoming sessions</Text>
+        )}
 
         <Text style={styles.chevron}>{'\u203A'}</Text>
       </TouchableOpacity>
@@ -87,17 +144,20 @@ export default function ScheduleScreen({ onClassPress }: ScheduleScreenProps) {
     if (loading) return null
     return (
       <View style={styles.emptyState}>
-        <Text style={styles.emptyTitle}>No classes found</Text>
+        <Text style={styles.emptyTitle}>No classes for this grade</Text>
         <Text style={styles.emptyText}>Classes will appear here once configured</Text>
       </View>
     )
   }
 
-  if (loading && classes.length === 0) {
+  if (loading && gradeClasses.length === 0) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Schedule</Text>
+          <TouchableOpacity onPress={onBack}>
+            <Text style={styles.backButton}>{'\u2039'} Back</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{gradeName}</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
@@ -109,11 +169,14 @@ export default function ScheduleScreen({ onClassPress }: ScheduleScreenProps) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Schedule</Text>
+        <TouchableOpacity onPress={onBack}>
+          <Text style={styles.backButton}>{'\u2039'} Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{gradeName}</Text>
       </View>
 
       <FlatList
-        data={classes}
+        data={gradeClasses}
         keyExtractor={item => item.id}
         renderItem={renderClassCard}
         ListEmptyComponent={renderEmpty}
@@ -139,6 +202,11 @@ const createStyles = (colors: ThemeColors) => ({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  backButton: {
+    fontSize: 16,
+    color: colors.primary,
+    marginBottom: 8,
+  },
   headerTitle: {
     fontSize: 28,
     fontWeight: '700' as const,
@@ -152,8 +220,6 @@ const createStyles = (colors: ThemeColors) => ({
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
   },
-
-  // Class cards
   classCard: {
     backgroundColor: colors.card,
     borderRadius: 12,
@@ -195,7 +261,7 @@ const createStyles = (colors: ThemeColors) => ({
     marginBottom: 4,
   },
   detailIcon: {
-    fontSize: 14,
+    fontSize: 13,
     marginRight: 8,
     width: 20,
   },
@@ -203,6 +269,25 @@ const createStyles = (colors: ThemeColors) => ({
     fontSize: 14,
     color: colors.textDetail,
     flex: 1 as const,
+  },
+  nextSession: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+  },
+  nextSessionText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  noSessions: {
+    fontSize: 13,
+    color: colors.textMuted,
+    fontStyle: 'italic' as const,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
   },
   chevron: {
     position: 'absolute' as const,
@@ -212,8 +297,6 @@ const createStyles = (colors: ThemeColors) => ({
     color: colors.chevron,
     fontWeight: '300' as const,
   },
-
-  // Empty
   emptyState: {
     alignItems: 'center' as const,
     paddingVertical: 40,

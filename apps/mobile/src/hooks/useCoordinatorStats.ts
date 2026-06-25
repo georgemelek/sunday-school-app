@@ -3,7 +3,6 @@ import { useClasses } from './useClasses'
 import { useGrades } from './useGrades'
 import { useSessions } from './useSessions'
 import { useAvailability } from './useAvailability'
-import { MOCK_CLASS_TYPES } from '../data/mockData'
 
 export interface ClassSummary {
   classId: string
@@ -22,10 +21,10 @@ export interface StaffingGap {
   totalCount: number
 }
 
-const TODAY = '2026-02-23'
-
 export function useCoordinatorStats() {
-  const { classes, loading: classesLoading, error: classesError, refetch: refetchClasses } = useClasses()
+  const TODAY = new Date().toISOString().split('T')[0]
+
+  const { classes, classTypes, loading: classesLoading, error: classesError, refetch: refetchClasses } = useClasses()
   const { grades, loading: gradesLoading, error: gradesError, refetch: refetchGrades } = useGrades()
   const { sessions, loading: sessionsLoading, error: sessionsError, refetch: refetchSessions } = useSessions()
   const { loading: availLoading, error: availError, refetch: refetchAvail, getUnavailableServantsForDate } = useAvailability()
@@ -48,7 +47,7 @@ export function useCoordinatorStats() {
 
   const classSummaries = useMemo((): ClassSummary[] => {
     return classes.map(cls => {
-      const classType = MOCK_CLASS_TYPES.find(ct => ct.id === cls.classTypeId)
+      const classType = classTypes.find(ct => ct.id === cls.classTypeId)
       const upcomingSessions = sessions
         .filter(s => s.classId === cls.id && s.date >= TODAY && s.status !== 'canceled')
         .sort((a, b) => a.date.localeCompare(b.date))
@@ -63,11 +62,11 @@ export function useCoordinatorStats() {
         nextSessionTopic: next?.lessonTopic || null,
       }
     })
-  }, [classes, sessions])
+  }, [classes, classTypes, sessions, TODAY])
 
   const upcomingGaps = useMemo((): StaffingGap[] => {
     const gaps: StaffingGap[] = []
-    const endDate = new Date(TODAY)
+    const endDate = new Date(TODAY + 'T12:00:00')
     endDate.setDate(endDate.getDate() + 14)
     const endStr = endDate.toISOString().split('T')[0]
 
@@ -113,6 +112,7 @@ export function useCoordinatorStats() {
     totalStudents,
     totalClasses,
     overallAttendanceRate,
+    grades,
     classSummaries,
     upcomingGaps,
     loading,

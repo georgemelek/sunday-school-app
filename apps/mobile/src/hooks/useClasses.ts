@@ -49,30 +49,54 @@ export function useClasses() {
       if (ctError) throw ctError
       setClassTypes((ctData ?? []) as ClassType[])
 
-      // Fetch classes the current servant is assigned to
-      const { data: csData, error: csError } = await supabase
-        .from(TABLES.CLASS_SERVANTS)
-        .select('class_id')
-        .eq('servant_id', profile.id)
-      if (csError) throw csError
+      let classData: any[] = []
 
-      const myClassIds = (csData ?? []).map((r: any) => r.class_id as string)
-      if (myClassIds.length === 0) {
-        setClasses([])
-        setServants([])
-        return
+      if (profile.role === 'coordinator' || profile.role === 'priest') {
+        // TODO: Replace with coordinator_grades junction table for per-coordinator grade scoping,
+        // so a coordinator can be scoped to a subset of grades rather than an entire church.
+        if (!profile.church_id) {
+          setClasses([])
+          setServants([])
+          return
+        }
+
+        // Fetch all classes in the coordinator's church
+        const { data: coordClassData, error: coordClassError } = await supabase
+          .from(TABLES.CLASSES)
+          .select(`
+            id, name, class_type_id, day_of_week, start_time, end_time, default_location,
+            class_grades(grade_id),
+            class_servants(servant_id)
+          `)
+          .eq('church_id', profile.church_id)
+        if (coordClassError) throw coordClassError
+        classData = coordClassData ?? []
+      } else {
+        // Servant: fetch only classes they are personally assigned to
+        const { data: csData, error: csError } = await supabase
+          .from(TABLES.CLASS_SERVANTS)
+          .select('class_id')
+          .eq('servant_id', profile.id)
+        if (csError) throw csError
+
+        const myClassIds = (csData ?? []).map((r: any) => r.class_id as string)
+        if (myClassIds.length === 0) {
+          setClasses([])
+          setServants([])
+          return
+        }
+
+        const { data: servantClassData, error: classError } = await supabase
+          .from(TABLES.CLASSES)
+          .select(`
+            id, name, class_type_id, day_of_week, start_time, end_time, default_location,
+            class_grades(grade_id),
+            class_servants(servant_id)
+          `)
+          .in('id', myClassIds)
+        if (classError) throw classError
+        classData = servantClassData ?? []
       }
-
-      // Fetch class details + related grades + all servants per class
-      const { data: classData, error: classError } = await supabase
-        .from(TABLES.CLASSES)
-        .select(`
-          id, name, class_type_id, day_of_week, start_time, end_time, default_location,
-          class_grades(grade_id),
-          class_servants(servant_id)
-        `)
-        .in('id', myClassIds)
-      if (classError) throw classError
 
       const mappedClasses: ClassInfo[] = (classData ?? []).map((c: any) => ({
         id: c.id,

@@ -12,7 +12,6 @@ import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import { useClasses } from '../../hooks/useClasses'
 import { useSessions } from '../../hooks/useSessions'
 import { useAvailability } from '../../hooks/useAvailability'
-import { MOCK_CLASS_TYPES } from '../../data/mockData'
 
 function getClassTypeColors(colors: ThemeColors): Record<string, string> {
   return {
@@ -22,8 +21,6 @@ function getClassTypeColors(colors: ThemeColors): Record<string, string> {
     'Bible Study': colors.classBibleStudy,
   }
 }
-
-const TODAY = '2026-02-23'
 
 interface DateRow {
   date: string
@@ -45,7 +42,7 @@ export default function StaffingScreen() {
   const { colors } = useTheme()
   const CLASS_TYPE_COLORS = getClassTypeColors(colors)
 
-  const { classes, loading: classesLoading, refetch: refetchClasses, getServantsByClassId } = useClasses()
+  const { classes, classTypes, loading: classesLoading, refetch: refetchClasses, getServantsByClassId } = useClasses()
   const { sessions, loading: sessionsLoading, refetch: refetchSessions } = useSessions()
   const { loading: availLoading, refetch: refetchAvail, getUnavailableServantsForDate, toggleAvailability } = useAvailability()
 
@@ -54,7 +51,8 @@ export default function StaffingScreen() {
 
   // Build date rows for the next 30 days that have sessions
   const dateRows = useMemo((): DateRow[] => {
-    const end = new Date(TODAY)
+    const TODAY = new Date().toISOString().split('T')[0]
+    const end = new Date(TODAY + 'T12:00:00')
     end.setDate(end.getDate() + 30)
     const endStr = end.toISOString().split('T')[0]
 
@@ -81,7 +79,7 @@ export default function StaffingScreen() {
         const cls = classes.find(c => c.id === classId)
         if (!cls) continue
 
-        const classType = MOCK_CLASS_TYPES.find(ct => ct.id === cls.classTypeId)
+        const classType = classTypes.find(ct => ct.id === cls.classTypeId)
         const unavailableIds = getUnavailableServantsForDate(date, cls.servantIds)
         const allServants = getServantsByClassId(classId)
 
@@ -107,7 +105,7 @@ export default function StaffingScreen() {
     }
 
     return rows
-  }, [sessions, classes, getUnavailableServantsForDate, getServantsByClassId])
+  }, [sessions, classes, classTypes, getUnavailableServantsForDate, getServantsByClassId])
 
   function refetch() {
     refetchClasses()

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
   View,
   Text,
@@ -22,8 +22,12 @@ export default function AttendanceReportScreen({ onBack }: AttendanceReportScree
   const { colors } = useTheme()
 
   const { grades, loading: gradesLoading } = useGrades()
-  const [selectedGradeId, setSelectedGradeId] = useState<string>(grades[0]?.id || '1')
+  const [selectedGradeId, setSelectedGradeId] = useState<string>('')
   const [dateRange, setDateRange] = useState<DateRange>('last30')
+
+  useEffect(() => {
+    if (!selectedGradeId && grades.length > 0) setSelectedGradeId(grades[0].id)
+  }, [grades])
 
   const { students, loading: studentsLoading } = useStudents(selectedGradeId)
   const { records, loading: attendanceLoading, getStudentAttendanceRate } = useAttendance(selectedGradeId)
@@ -33,7 +37,7 @@ export default function AttendanceReportScreen({ onBack }: AttendanceReportScree
   // Filter records by date range
   const filteredRecords = useMemo(() => {
     if (dateRange === 'all') return records
-    const today = new Date('2026-02-23')
+    const today = new Date()
     const days = dateRange === 'last30' ? 30 : 90
     const cutoff = new Date(today)
     cutoff.setDate(cutoff.getDate() - days)

@@ -53,6 +53,7 @@ export type OutreachStackParamList = {
 
 export type SettingsStackParamList = {
   Settings: undefined
+  InviteServants: undefined
 }
 
 // --- Navigation prop types ---
@@ -89,6 +90,7 @@ export type CoordinatorTabParamList = {
 export type CoordDashboardStackParamList = {
   Dashboard: undefined
   AttendanceReport: undefined
+  GradeDetail: { gradeId: string; gradeName: string }
 }
 
 // --- Coordinator Schedule Stack ---
