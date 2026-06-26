@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react'
+import { format, addDays } from 'date-fns'
 import {
   View,
   Text,
@@ -51,10 +52,10 @@ export default function StaffingScreen() {
 
   // Build date rows for the next 30 days that have sessions
   const dateRows = useMemo((): DateRow[] => {
-    const TODAY = new Date().toISOString().split('T')[0]
+    const TODAY = format(new Date(), 'yyyy-MM-dd')
     const end = new Date(TODAY + 'T12:00:00')
     end.setDate(end.getDate() + 30)
-    const endStr = end.toISOString().split('T')[0]
+    const endStr = format(end, 'yyyy-MM-dd')
 
     // Get all upcoming session dates
     const upcomingSessions = sessions.filter(

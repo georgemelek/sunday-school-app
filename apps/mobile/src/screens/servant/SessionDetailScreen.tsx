@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { format } from 'date-fns'
 import {
   View,
   Text,
@@ -83,7 +84,7 @@ export default function SessionDetailScreen({
   const currentUserId = isTourMode ? CURRENT_USER.id : (profile?.id ?? '')
   const isTeaching = localSession.lessonServantId === currentUserId
 
-  const TODAY = new Date().toISOString().split('T')[0]
+  const TODAY = format(new Date(), 'yyyy-MM-dd')
   const canTakeAttendance =
     onTakeAttendance &&
     cls &&

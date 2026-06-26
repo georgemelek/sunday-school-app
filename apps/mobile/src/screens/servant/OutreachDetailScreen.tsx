@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react'
+import { format } from 'date-fns'
 import {
   View,
   Text,
@@ -90,7 +91,7 @@ export default function OutreachDetailScreen({
   }
 
   function handleSaveVisit() {
-    const dateStr = visitDate.toISOString().split('T')[0]
+    const dateStr = format(visitDate, 'yyyy-MM-dd')
     onLogVisit(assignment.id, dateStr, visitNotes.trim() || undefined)
     setModalVisible(false)
     setVisitDate(new Date())
@@ -220,7 +221,7 @@ export default function OutreachDetailScreen({
               style={styles.dateDisplayButton}
               onPress={() => setShowDatePicker(true)}
             >
-              <Text style={styles.dateDisplayText}>{formatDate(visitDate.toISOString().split('T')[0])}</Text>
+              <Text style={styles.dateDisplayText}>{formatDate(format(visitDate, 'yyyy-MM-dd'))}</Text>
             </TouchableOpacity>
 
             {showDatePicker && (

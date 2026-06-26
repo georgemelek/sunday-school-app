@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react'
+import { format } from 'date-fns'
 import {
   View,
   Text,
@@ -41,7 +42,7 @@ export default function AttendanceReportScreen({ onBack }: AttendanceReportScree
     const days = dateRange === 'last30' ? 30 : 90
     const cutoff = new Date(today)
     cutoff.setDate(cutoff.getDate() - days)
-    const cutoffStr = cutoff.toISOString().split('T')[0]
+    const cutoffStr = format(cutoff, 'yyyy-MM-dd')
     return records.filter(r => r.date >= cutoffStr)
   }, [records, dateRange])
 

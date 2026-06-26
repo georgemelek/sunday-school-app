@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native'
+import { useFocusEffect } from '@react-navigation/native'
 import { useThemedStyles, useTheme, ThemeColors } from '../../theme'
 import type { AssignedKid, GradeServantProgress } from '../../hooks/useOutreach'
 import { OutreachKidCard } from '../../components/OutreachKidCard'
@@ -42,6 +43,8 @@ export default function OutreachScreen({
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
   const [localExpanded, setLocalExpanded] = useState(false)
+
+  useFocusEffect(useCallback(() => { refetch() }, [refetch]))
   const [visitFilter, setVisitFilter] = useState<VisitFilter>('all')
   const [sortKey, setSortKey] = useState<SortKey>('first_name')
 
@@ -212,16 +215,16 @@ export default function OutreachScreen({
           !loading ? (
             <View style={styles.empty}>
               <Text style={styles.emptyTitle}>
-                {assignedKids.length === 0 ? 'No Kids Assigned' : 'No matches'}
+                {assignedKids.length === 0 ? 'No kids yet' : 'No matches'}
               </Text>
               <Text style={styles.emptyText}>
                 {assignedKids.length === 0
-                  ? "You don't have any outreach assignments yet."
+                  ? "Tap 'Manage' to select the kids you're responsible for."
                   : 'Try a different filter.'}
               </Text>
               {assignedKids.length === 0 && onManagePress && (
                 <TouchableOpacity style={styles.emptyManageButton} onPress={onManagePress}>
-                  <Text style={styles.emptyManageText}>Manage Assignments</Text>
+                  <Text style={styles.emptyManageText}>Manage My Kids</Text>
                 </TouchableOpacity>
               )}
             </View>

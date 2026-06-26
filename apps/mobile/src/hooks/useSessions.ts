@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { format, addDays } from 'date-fns'
 import { useTour } from '../contexts/TourContext'
 import { supabase } from '../lib/supabase'
 import { TABLES } from '../lib/tables'
@@ -402,10 +403,10 @@ export function useSessions(classId?: string, classIds?: string[]) {
 
   const getUpcomingSessions = useCallback(
     (days: number): Session[] => {
-      const todayStr = new Date().toISOString().split('T')[0]
+      const todayStr = format(new Date(), 'yyyy-MM-dd')
       const end = new Date()
       end.setDate(end.getDate() + days)
-      const endStr = end.toISOString().split('T')[0]
+      const endStr = format(end, 'yyyy-MM-dd')
 
       return sessions
         .filter(s => s.date >= todayStr && s.date <= endStr)

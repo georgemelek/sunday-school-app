@@ -773,6 +773,102 @@ export function useOutreachManagement() {
   }
 }
 
+// ─── useOutreachClaim ─────────────────────────────────────────────────────────
+// Opt-in model: servant sees all kids in their grades and self-selects who they're responsible for.
+
+export interface ClaimableKid {
+  student: Student
+  assignmentId: string | null  // null = not claimed by anyone yet (or by this servant)
+  claimedByMe: boolean
+}
+
+export function useOutreachClaim() {
+  const { isTourMode } = useTour()
+  const { profile } = useAuth()
+  const [kids, setKids] = useState<ClaimableKid[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetch = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      if (isTourMode) {
+        await new Promise(resolve => setTimeout(resolve, 300))
+        const myId = 'servant-1'
+        const result: ClaimableKid[] = MOCK_OUTREACH_STUDENTS.map(s => {
+          const a = MOCK_OUTREACH_ASSIGNMENTS.find(a => a.studentId === s.id && a.servantId === myId && a.status === 'active')
+          return { student: s, assignmentId: a?.id ?? null, claimedByMe: !!a }
+        })
+        setKids(result)
+        return
+      }
+
+      if (!profile) { setKids([]); return }
+
+      const { data: sgRows, error: sgError } = await supabase
+        .from(TABLES.SERVANT_GRADES).select('grade_id').eq('servant_id', profile.id)
+      if (sgError) throw sgError
+      const gradeIds = (sgRows ?? []).map((r: any) => r.grade_id)
+      if (!gradeIds.length) { setKids([]); return }
+
+      const { data: studentRows, error: studentError } = await supabase
+        .from(TABLES.STUDENTS).select('*').in('grade_id', gradeIds).order('first_name')
+      if (studentError) throw studentError
+      const allStudents: Student[] = studentRows ?? []
+
+      const studentIds = allStudents.map(s => s.id)
+      const { data: myAssigns } = studentIds.length
+        ? await supabase
+            .from(TABLES.OUTREACH_ASSIGNMENTS)
+            .select('id, student_id')
+            .eq('servant_id', profile.id)
+            .in('student_id', studentIds)
+            .in('status', ['active', 'local_friend'])
+        : { data: [] }
+
+      const myAssignMap = new Map((myAssigns ?? []).map((r: any) => [r.student_id, r.id]))
+
+      setKids(allStudents.map(s => ({
+        student: s,
+        assignmentId: myAssignMap.get(s.id) ?? null,
+        claimedByMe: myAssignMap.has(s.id),
+      })))
+    } catch (err: any) {
+      setError(err.message || 'Failed to load kids')
+    } finally {
+      setLoading(false)
+    }
+  }, [isTourMode, profile])
+
+  useEffect(() => { fetch() }, [fetch])
+
+  async function claimKid(studentId: string) {
+    if (isTourMode) {
+      const id = `oa-${Date.now()}`
+      setKids(prev => prev.map(k => k.student.id === studentId ? { ...k, assignmentId: id, claimedByMe: true } : k))
+      return
+    }
+    const { data } = await supabase
+      .from(TABLES.OUTREACH_ASSIGNMENTS)
+      .insert({ student_id: studentId, servant_id: profile!.id, status: 'active' })
+      .select('id')
+      .single()
+    setKids(prev => prev.map(k => k.student.id === studentId ? { ...k, assignmentId: data?.id ?? null, claimedByMe: true } : k))
+  }
+
+  async function unclaimKid(assignmentId: string, studentId: string) {
+    if (isTourMode) {
+      setKids(prev => prev.map(k => k.student.id === studentId ? { ...k, assignmentId: null, claimedByMe: false } : k))
+      return
+    }
+    await supabase.from(TABLES.OUTREACH_ASSIGNMENTS).delete().eq('id', assignmentId)
+    setKids(prev => prev.map(k => k.student.id === studentId ? { ...k, assignmentId: null, claimedByMe: false } : k))
+  }
+
+  return { kids, loading, error, refetch: fetch, claimKid, unclaimKid }
+}
+
 // ─── useCoordinatorOutreach ───────────────────────────────────────────────────
 
 export interface CoordOutreachKid {

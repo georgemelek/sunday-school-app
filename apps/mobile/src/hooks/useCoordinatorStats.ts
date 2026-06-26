@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { format, addDays } from 'date-fns'
 import { useClasses } from './useClasses'
 import { useGrades } from './useGrades'
 import { useSessions } from './useSessions'
@@ -22,7 +23,7 @@ export interface StaffingGap {
 }
 
 export function useCoordinatorStats() {
-  const TODAY = new Date().toISOString().split('T')[0]
+  const TODAY = format(new Date(), 'yyyy-MM-dd')
 
   const { classes, classTypes, loading: classesLoading, error: classesError, refetch: refetchClasses } = useClasses()
   const { grades, loading: gradesLoading, error: gradesError, refetch: refetchGrades } = useGrades()
@@ -68,7 +69,7 @@ export function useCoordinatorStats() {
     const gaps: StaffingGap[] = []
     const endDate = new Date(TODAY + 'T12:00:00')
     endDate.setDate(endDate.getDate() + 14)
-    const endStr = endDate.toISOString().split('T')[0]
+    const endStr = format(endDate, 'yyyy-MM-dd')
 
     const upcomingSessions = sessions.filter(
       s => s.date >= TODAY && s.date <= endStr && s.status !== 'canceled'

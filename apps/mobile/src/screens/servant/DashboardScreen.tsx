@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react'
+import { format, addDays } from 'date-fns'
 import {
   View,
   Text,
@@ -64,12 +65,12 @@ export default function DashboardScreen({
   const [visibleDays, setVisibleDays] = useState(14)
 
   // Derived helpers (inlined from old hooks)
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = format(new Date(), 'yyyy-MM-dd')
 
   function getUpcomingSessions(days: number): Session[] {
     const end = new Date()
     end.setDate(end.getDate() + days)
-    const endStr = end.toISOString().split('T')[0]
+    const endStr = format(end, 'yyyy-MM-dd')
     return sessions
       .filter(s => s.date >= todayStr && s.date <= endStr)
       .sort((a, b) => {
@@ -322,7 +323,7 @@ function getISOWeek(dateStr: string): string {
   const day = d.getDay() // 0=Sun
   const monday = new Date(d)
   monday.setDate(d.getDate() - ((day + 6) % 7)) // shift to Monday
-  return monday.toISOString().split('T')[0]
+  return format(monday, 'yyyy-MM-dd')
 }
 
 function groupSessionsByDate(sessions: Session[]): Array<{ title: string; weekStart: boolean; data: Session[] }> {
@@ -349,12 +350,12 @@ function groupSessionsByDate(sessions: Session[]): Array<{ title: string; weekSt
 }
 
 function formatSectionDate(dateStr: string): string {
-  const today = new Date().toISOString().split('T')[0]
+  const today = format(new Date(), 'yyyy-MM-dd')
   if (dateStr === today) return 'Today'
 
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
-  if (dateStr === tomorrow.toISOString().split('T')[0]) return 'Tomorrow'
+  if (dateStr === format(tomorrow, 'yyyy-MM-dd')) return 'Tomorrow'
 
   const d = new Date(dateStr + 'T12:00:00')
   const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']

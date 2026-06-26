@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+import { format } from 'date-fns'
 import {
   View,
   Text,
@@ -68,7 +69,7 @@ export default function CoordGradeDetailScreen({
   }
 
   function getNextSession(classId: string) {
-    const today = new Date().toISOString().split('T')[0]
+    const today = format(new Date(), 'yyyy-MM-dd')
     return sessions
       .filter(s => s.classId === classId && s.date >= today && s.status !== 'canceled')
       .sort((a, b) => a.date.localeCompare(b.date))[0] ?? null

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+import { format, addDays } from 'date-fns'
 import {
   View,
   Text,
@@ -76,8 +77,8 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
     const end = new Date()
     end.setDate(end.getDate() + 30)
 
-    const todayStr = today.toISOString().split('T')[0]
-    const endStr = end.toISOString().split('T')[0]
+    const todayStr = format(today, 'yyyy-MM-dd')
+    const endStr = format(end, 'yyyy-MM-dd')
 
     const upcoming = sessions.filter(
       s => s.date >= todayStr && s.date <= endStr && s.status === 'scheduled'
@@ -240,12 +241,12 @@ export default function AvailabilityScreen({ onBack }: AvailabilityScreenProps) 
 // --- Helpers ---
 
 function formatDateLabel(dateStr: string): string {
-  const today = new Date().toISOString().split('T')[0]
+  const today = format(new Date(), 'yyyy-MM-dd')
   if (dateStr === today) return 'Today'
 
   const tomorrow = new Date()
   tomorrow.setDate(tomorrow.getDate() + 1)
-  if (dateStr === tomorrow.toISOString().split('T')[0]) return 'Tomorrow'
+  if (dateStr === format(tomorrow, 'yyyy-MM-dd')) return 'Tomorrow'
 
   const d = new Date(dateStr + 'T12:00:00')
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']

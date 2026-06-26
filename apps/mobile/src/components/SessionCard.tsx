@@ -1,4 +1,5 @@
 import React, { memo } from 'react'
+import { format } from 'date-fns'
 import { View, Text, TouchableOpacity, Linking, Platform } from 'react-native'
 import { Session } from '../hooks/useSessions'
 import { ClassInfo, ClassType, Servant } from '../data/mockData'
@@ -33,7 +34,7 @@ export const SessionCard = memo(function SessionCard({
   const styles = useThemedStyles(createStyles)
   const { colors } = useTheme()
 
-  const isToday = session.date === new Date().toISOString().split('T')[0]
+  const isToday = session.date === format(new Date(), 'yyyy-MM-dd')
   const isCanceled = session.status === 'canceled'
 
   const timeLabel = formatTimeRange(session.startTime, session.endTime)

@@ -98,7 +98,7 @@ function buildSessionRows(
   }
 
   while (current <= end) {
-    const dateStr = current.toISOString().split('T')[0]
+    const dateStr = format(current, 'yyyy-MM-dd')
     rows.push({
       class_id: classId,
       date: dateStr,
@@ -226,7 +226,7 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
   const [savedClassIds, setSavedClassIds] = useState<{ id: string; name: string }[]>([])
 
   // Shared date range for all classes
-  const [scheduleStartDate, setScheduleStartDate] = useState(new Date().toISOString().split('T')[0])
+  const [scheduleStartDate, setScheduleStartDate] = useState(format(new Date(), 'yyyy-MM-dd'))
   const [scheduleEndDate, setScheduleEndDate] = useState('')
 
   // Date/time picker state
@@ -686,7 +686,7 @@ export default function OnboardingScreen({ onComplete, onSkip, onGoToAvailabilit
                   display="spinner"
                   onChange={(_, selected) => {
                     if (selected) {
-                      const str = selected.toISOString().split('T')[0]
+                      const str = format(selected, 'yyyy-MM-dd')
                       if (activeDatePicker === 'startDate') setScheduleStartDate(str)
                       else setScheduleEndDate(str)
                     }
