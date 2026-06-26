@@ -24,7 +24,6 @@ interface GradeDetailScreenProps {
   onBack?: () => void
   onAddStudent?: () => void
   onEditStudent?: (student: any) => void
-  onTakeAttendance?: () => void
   onImportStudents?: () => void
 }
 
@@ -34,7 +33,6 @@ export default function GradeDetailScreen({
   onBack,
   onAddStudent,
   onEditStudent,
-  onTakeAttendance,
   onImportStudents,
 }: GradeDetailScreenProps) {
   const styles = useThemedStyles(createStyles)
@@ -99,13 +97,6 @@ export default function GradeDetailScreen({
     }
   }
 
-  const handleTakeAttendance = () => {
-    if (onTakeAttendance) {
-      onTakeAttendance()
-    } else {
-      Alert.alert('Navigation', 'Take attendance functionality coming soon')
-    }
-  }
 
   const keyExtractor = useCallback((item: { id: string }) => item.id, [])
 
@@ -241,12 +232,6 @@ export default function GradeDetailScreen({
           {/* Action Buttons */}
           {students.length > 0 && (
             <View style={styles.actionButtons}>
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={handleTakeAttendance}
-              >
-                <Text style={styles.actionButtonText} numberOfLines={1}>✓ Attendance</Text>
-              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={handleAddStudentPress}

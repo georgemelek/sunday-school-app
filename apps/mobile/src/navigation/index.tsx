@@ -206,12 +206,6 @@ function GradesStackNavigator() {
                 student,
               })
             }
-            onTakeAttendance={() =>
-              navigation.navigate('TakeAttendance', {
-                gradeId: route.params.gradeId,
-                gradeName: route.params.gradeName,
-              })
-            }
             onImportStudents={() =>
               navigation.navigate('ImportStudents', {
                 gradeId: route.params.gradeId,
