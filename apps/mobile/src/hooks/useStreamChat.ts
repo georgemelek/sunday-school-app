@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useCreateChatClient } from 'stream-chat-expo'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -32,7 +32,6 @@ function useStreamTokenProvider(userId: string | undefined) {
 export function useStreamChatClient() {
   const { profile } = useAuth()
   const tokenProvider = useStreamTokenProvider(profile?.id)
-
   const client = useCreateChatClient(
     profile
       ? {
@@ -46,4 +45,33 @@ export function useStreamChatClient() {
   )
 
   return client
+}
+
+export function useUnreadCount() {
+  const client = useStreamChatClient()
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    if (!client) return
+
+    // Seed from current connection state — total_unread_count is on OwnUserResponse
+    const ownUser = client.user as (typeof client.user & { total_unread_count?: number }) | undefined
+    setUnreadCount(ownUser?.total_unread_count ?? 0)
+
+    const handleEvent = (event: { total_unread_count?: number }) => {
+      setUnreadCount(event.total_unread_count ?? 0)
+    }
+
+    client.on('notification.message_new', handleEvent)
+    client.on('notification.mark_read', handleEvent)
+    client.on('notification.mark_unread', handleEvent)
+
+    return () => {
+      client.off('notification.message_new', handleEvent)
+      client.off('notification.mark_read', handleEvent)
+      client.off('notification.mark_unread', handleEvent)
+    }
+  }, [client])
+
+  return unreadCount
 }

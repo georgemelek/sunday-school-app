@@ -73,6 +73,7 @@ import { supabase } from '../lib/supabase'
 // Messaging screens
 import ChannelListScreen from '../screens/messaging/ChannelListScreen'
 import ChannelScreen from '../screens/messaging/ChannelScreen'
+import { useUnreadCount } from '../hooks/useStreamChat'
 
 // --- Stack / Tab Navigators ---
 
@@ -625,6 +626,7 @@ function SettingsStackNavigator({ isTourMode, onSignIn }: { isTourMode?: boolean
 
 function ServantTabNavigator({ isTourMode, onSignIn }: { isTourMode?: boolean; onSignIn?: () => void }) {
   const { colors } = useTheme()
+  const unreadCount = useUnreadCount()
 
   return (
     <Tab.Navigator
@@ -686,6 +688,7 @@ function ServantTabNavigator({ isTourMode, onSignIn }: { isTourMode?: boolean; o
           tabBarIcon: ({ color }) => (
             <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCAC'}</Text>
           ),
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
         }}
       />
       <Tab.Screen
@@ -892,6 +895,7 @@ function CoordOutreachStackNavigator() {
 
 function CoordinatorTabNavigator() {
   const { colors } = useTheme()
+  const unreadCount = useUnreadCount()
 
   return (
     <CoordTab.Navigator
@@ -953,6 +957,7 @@ function CoordinatorTabNavigator() {
           tabBarIcon: ({ color }) => (
             <Text style={{ fontSize: 20, color }}>{'\uD83D\uDCAC'}</Text>
           ),
+          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
         }}
       />
       <CoordTab.Screen
