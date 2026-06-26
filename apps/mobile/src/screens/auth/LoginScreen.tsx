@@ -22,29 +22,45 @@ interface Props {
   onTakeTour?: () => void
 }
 
+// Dev accounts that bypass magic link and use password auth for testing.
+const DEV_ACCOUNTS: Record<string, string> = {
+  'test@gmail.com': '123456',
+  'test2@gmail.com': '123456',
+}
+
 export default function LoginScreen({ navigation, onTakeTour }: Props) {
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sent, setSent] = useState(false)
   const styles = useThemedStyles(createStyles)
 
-  async function handleLogin() {
-    if (!email || !password) {
-      Alert.alert('Error', 'Please fill in all fields')
+  async function handleSend() {
+    const trimmed = email.trim().toLowerCase()
+    if (!trimmed) {
+      Alert.alert('Error', 'Please enter your email address')
       return
     }
 
     setLoading(true)
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      })
+      // Dev bypass: sign in with password so we don't need a real email
+      if (DEV_ACCOUNTS[trimmed]) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: trimmed,
+          password: DEV_ACCOUNTS[trimmed],
+        })
+        if (error) throw error
+        return
+      }
 
+      const { error } = await supabase.auth.signInWithOtp({
+        email: trimmed,
+        options: { shouldCreateUser: false, emailRedirectTo: 'ministryhub://login-callback' },
+      })
       if (error) throw error
-      // Navigation handled by AuthContext
+      setSent(true)
     } catch (error: any) {
-      Alert.alert('Login Failed', error.message || 'An error occurred during login')
+      Alert.alert('Error', error.message || 'Something went wrong')
     } finally {
       setLoading(false)
     }
@@ -57,63 +73,70 @@ export default function LoginScreen({ navigation, onTakeTour }: Props) {
     >
       <View style={styles.content}>
         <Text style={styles.title}>MinistryHub</Text>
-        <Text style={styles.subtitle}>Sign in to continue</Text>
+        <Text style={styles.subtitle}>
+          {sent ? 'Check your email' : 'Sign in to continue'}
+        </Text>
 
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            placeholderTextColor="#999"
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="email-address"
-            editable={!loading}
-          />
-
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            placeholderTextColor="#999"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            editable={!loading}
-          />
-
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleLogin}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Sign In</Text>
-            )}
-          </TouchableOpacity>
-
-          {onTakeTour && (
-            <TouchableOpacity
-              style={styles.tourButton}
-              onPress={onTakeTour}
-              disabled={loading}
-            >
-              <Text style={styles.tourButtonText}>Take a Tour</Text>
-            </TouchableOpacity>
-          )}
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Don't have an account? </Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Register')}
-              disabled={loading}
-            >
-              <Text style={styles.link}>Sign Up</Text>
+        {sent ? (
+          <View style={styles.sentContainer}>
+            <Text style={styles.sentText}>
+              We sent a magic link to{'\n'}<Text style={styles.sentEmail}>{email.trim().toLowerCase()}</Text>
+            </Text>
+            <Text style={styles.sentHint}>Tap the link in the email to sign in.</Text>
+            <TouchableOpacity onPress={() => setSent(false)} style={styles.retryButton}>
+              <Text style={styles.retryText}>Use a different email</Text>
             </TouchableOpacity>
           </View>
-        </View>
+        ) : (
+          <View style={styles.form}>
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor="#999"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="emailAddress"
+              editable={!loading}
+              autoFocus
+            />
+
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleSend}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Send Magic Link</Text>
+              )}
+            </TouchableOpacity>
+
+            {onTakeTour && (
+              <TouchableOpacity
+                style={styles.tourButton}
+                onPress={onTakeTour}
+                disabled={loading}
+              >
+                <Text style={styles.tourButtonText}>Take a Tour</Text>
+              </TouchableOpacity>
+            )}
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>New here? </Text>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Register')}
+                disabled={loading}
+              >
+                <Text style={styles.link}>Create account</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
     </KeyboardAvoidingView>
   )
@@ -193,6 +216,34 @@ const createStyles = (colors: ThemeColors) => ({
     color: colors.textSecondary,
   },
   link: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600' as const,
+  },
+  sentContainer: {
+    alignItems: 'center' as const,
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  sentText: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    textAlign: 'center' as const,
+    lineHeight: 24,
+  },
+  sentEmail: {
+    fontWeight: '600' as const,
+    color: colors.primary,
+  },
+  sentHint: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
+  },
+  retryButton: {
+    marginTop: 8,
+  },
+  retryText: {
     fontSize: 14,
     color: colors.primary,
     fontWeight: '600' as const,

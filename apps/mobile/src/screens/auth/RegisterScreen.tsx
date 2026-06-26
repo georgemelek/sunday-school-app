@@ -22,7 +22,7 @@ interface Props {
   navigation: RegisterScreenNavigationProp
 }
 
-type UserRole = 'servant' | 'coordinator' | 'priest'
+type UserRole = 'servant' | 'coordinator'
 
 function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, '').slice(0, 10)
@@ -36,10 +36,9 @@ export default function RegisterScreen({ navigation }: Props) {
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
   const [role, setRole] = useState<UserRole>('servant')
   const [loading, setLoading] = useState(false)
+  const [sent, setSent] = useState(false)
   const styles = useThemedStyles(createStyles)
 
   function handlePhoneChange(text: string) {
@@ -47,18 +46,8 @@ export default function RegisterScreen({ navigation }: Props) {
   }
 
   async function handleRegister() {
-    if (!firstName.trim() || !lastName.trim() || !email || !password || !confirmPassword) {
+    if (!firstName.trim() || !lastName.trim() || !email) {
       Alert.alert('Error', 'Please fill in all required fields')
-      return
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match')
-      return
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters')
       return
     }
 
@@ -67,10 +56,11 @@ export default function RegisterScreen({ navigation }: Props) {
 
     setLoading(true)
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signInWithOtp({
         email: email.trim().toLowerCase(),
-        password,
         options: {
+          shouldCreateUser: true,
+          emailRedirectTo: 'ministryhub://login-callback',
           data: {
             full_name: fullName,
             phone: rawPhone ? `+1${rawPhone}` : null,
@@ -79,19 +69,30 @@ export default function RegisterScreen({ navigation }: Props) {
         },
       })
 
-      if (authError) throw authError
-
-      if (!authData.user) {
-        throw new Error('Registration failed - no user created')
-      }
-
-      // Profile will be automatically created by database trigger
-      await new Promise(resolve => setTimeout(resolve, 500))
+      if (error) throw error
+      setSent(true)
     } catch (error: any) {
       Alert.alert('Registration Failed', error.message || 'An error occurred during registration')
     } finally {
       setLoading(false)
     }
+  }
+
+  if (sent) {
+    return (
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <View style={styles.sentContent}>
+          <Text style={styles.title}>Check your email</Text>
+          <Text style={styles.sentText}>
+            We sent a magic link to{'\n'}<Text style={styles.sentEmail}>{email.trim().toLowerCase()}</Text>
+          </Text>
+          <Text style={styles.sentHint}>Tap the link in the email to finish creating your account.</Text>
+          <TouchableOpacity onPress={() => setSent(false)} style={styles.retryButton}>
+            <Text style={styles.retryText}>Use a different email</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    )
   }
 
   return (
@@ -156,30 +157,6 @@ export default function RegisterScreen({ navigation }: Props) {
               editable={!loading}
             />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Password *"
-              placeholderTextColor="#999"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete="new-password"
-              textContentType="newPassword"
-              editable={!loading}
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Confirm Password *"
-              placeholderTextColor="#999"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              autoComplete="new-password"
-              textContentType="newPassword"
-              editable={!loading}
-            />
-
             <Text style={styles.label}>I am a:</Text>
             <View style={styles.roleContainer}>
               <TouchableOpacity
@@ -201,16 +178,6 @@ export default function RegisterScreen({ navigation }: Props) {
                   Coordinator
                 </Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.roleButton, role === 'priest' && styles.roleButtonActive]}
-                onPress={() => setRole('priest')}
-                disabled={loading}
-              >
-                <Text style={[styles.roleText, role === 'priest' && styles.roleTextActive]}>
-                  Priest
-                </Text>
-              </TouchableOpacity>
             </View>
 
             <TouchableOpacity
@@ -221,7 +188,7 @@ export default function RegisterScreen({ navigation }: Props) {
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.buttonText}>Create Account</Text>
+                <Text style={styles.buttonText}>Send Magic Link</Text>
               )}
             </TouchableOpacity>
 
@@ -344,6 +311,36 @@ const createStyles = (colors: ThemeColors) => ({
     color: colors.textSecondary,
   },
   link: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '600' as const,
+  },
+  sentContent: {
+    flex: 1,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    padding: 32,
+    gap: 16,
+  },
+  sentText: {
+    fontSize: 16,
+    color: colors.textPrimary,
+    textAlign: 'center' as const,
+    lineHeight: 24,
+  },
+  sentEmail: {
+    fontWeight: '600' as const,
+    color: colors.primary,
+  },
+  sentHint: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center' as const,
+  },
+  retryButton: {
+    marginTop: 8,
+  },
+  retryText: {
     fontSize: 14,
     color: colors.primary,
     fontWeight: '600' as const,

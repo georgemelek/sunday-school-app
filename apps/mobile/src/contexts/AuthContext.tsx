@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { Linking } from 'react-native'
 import { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { Profile } from '../types'
@@ -43,7 +44,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     })
 
-    return () => subscription.unsubscribe()
+    // Handle magic link deep links (ministryhub://login-callback#access_token=...&type=magiclink)
+    function handleUrl({ url }: { url: string }) {
+      if (!url.includes('access_token') && !url.includes('token_hash')) return
+
+      // Supabase puts tokens in the hash fragment (#), not query params
+      const hashPart = url.includes('#') ? url.split('#')[1] : url.split('?')[1] ?? ''
+      const params = new URLSearchParams(hashPart)
+
+      const accessToken = params.get('access_token')
+      const refreshToken = params.get('refresh_token')
+      const tokenHash = params.get('token_hash')
+      const type = params.get('type') as 'magiclink' | 'recovery' | null
+
+      if (accessToken && refreshToken) {
+        // Supabase v2 magic link: tokens are in the fragment directly
+        supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).catch(console.error)
+      } else if (tokenHash && type) {
+        supabase.auth.verifyOtp({ token_hash: tokenHash, type }).catch(console.error)
+      }
+    }
+
+    Linking.getInitialURL().then((url) => { if (url) handleUrl({ url }) })
+    const linkingSub = Linking.addEventListener('url', handleUrl)
+
+    return () => {
+      subscription.unsubscribe()
+      linkingSub.remove()
+    }
   }, [])
 
   async function fetchProfile(userId: string) {
