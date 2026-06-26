@@ -24,8 +24,16 @@ interface Props {
 
 type UserRole = 'servant' | 'coordinator' | 'priest'
 
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 10)
+  if (digits.length <= 3) return digits
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+}
+
 export default function RegisterScreen({ navigation }: Props) {
-  const [fullName, setFullName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
@@ -34,9 +42,12 @@ export default function RegisterScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false)
   const styles = useThemedStyles(createStyles)
 
+  function handlePhoneChange(text: string) {
+    setPhone(formatPhone(text))
+  }
+
   async function handleRegister() {
-    // Validation
-    if (!fullName || !email || !password || !confirmPassword) {
+    if (!firstName.trim() || !lastName.trim() || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all required fields')
       return
     }
@@ -51,16 +62,18 @@ export default function RegisterScreen({ navigation }: Props) {
       return
     }
 
+    const fullName = `${firstName.trim()} ${lastName.trim()}`
+    const rawPhone = phone.replace(/\D/g, '')
+
     setLoading(true)
     try {
-      // Sign up user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
         options: {
           data: {
-            full_name: fullName.trim(),
-            phone: phone.trim() || null,
+            full_name: fullName,
+            phone: rawPhone ? `+1${rawPhone}` : null,
             role,
           },
         },
@@ -73,7 +86,6 @@ export default function RegisterScreen({ navigation }: Props) {
       }
 
       // Profile will be automatically created by database trigger
-      // Wait a moment for trigger to complete
       await new Promise(resolve => setTimeout(resolve, 500))
     } catch (error: any) {
       Alert.alert('Registration Failed', error.message || 'An error occurred during registration')
@@ -93,15 +105,30 @@ export default function RegisterScreen({ navigation }: Props) {
           <Text style={styles.subtitle}>Join your ministry community</Text>
 
           <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="Full Name *"
-              placeholderTextColor="#999"
-              value={fullName}
-              onChangeText={setFullName}
-              autoCapitalize="words"
-              editable={!loading}
-            />
+            <View style={styles.nameRow}>
+              <TextInput
+                style={[styles.input, styles.nameInput]}
+                placeholder="First Name *"
+                placeholderTextColor="#999"
+                value={firstName}
+                onChangeText={setFirstName}
+                autoCapitalize="words"
+                autoComplete="given-name"
+                textContentType="givenName"
+                editable={!loading}
+              />
+              <TextInput
+                style={[styles.input, styles.nameInput]}
+                placeholder="Last Name *"
+                placeholderTextColor="#999"
+                value={lastName}
+                onChangeText={setLastName}
+                autoCapitalize="words"
+                autoComplete="family-name"
+                textContentType="familyName"
+                editable={!loading}
+              />
+            </View>
 
             <TextInput
               style={styles.input}
@@ -112,6 +139,8 @@ export default function RegisterScreen({ navigation }: Props) {
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
+              autoComplete="email"
+              textContentType="emailAddress"
               editable={!loading}
             />
 
@@ -120,8 +149,10 @@ export default function RegisterScreen({ navigation }: Props) {
               placeholder="Phone (optional)"
               placeholderTextColor="#999"
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={handlePhoneChange}
               keyboardType="phone-pad"
+              autoComplete="tel"
+              textContentType="telephoneNumber"
               editable={!loading}
             />
 
@@ -132,6 +163,8 @@ export default function RegisterScreen({ navigation }: Props) {
               value={password}
               onChangeText={setPassword}
               secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
               editable={!loading}
             />
 
@@ -142,6 +175,8 @@ export default function RegisterScreen({ navigation }: Props) {
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
+              autoComplete="new-password"
+              textContentType="newPassword"
               editable={!loading}
             />
 
@@ -233,6 +268,13 @@ const createStyles = (colors: ThemeColors) => ({
   },
   form: {
     width: '100%' as const,
+  },
+  nameRow: {
+    flexDirection: 'row' as const,
+    gap: 12,
+  },
+  nameInput: {
+    flex: 1,
   },
   input: {
     backgroundColor: colors.inputBackground,
