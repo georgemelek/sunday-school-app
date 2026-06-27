@@ -1,3 +1,30 @@
+Need to update the statuses of these
+* Update to iOS27 design kit
+* Make professional touch by adding animations/haptics: https://www.youtube.com/watch?v=yH0QwDpV4ZM
+* Change to use icons
+* See if there's a better font to use
+* Fix Set up your ministry/classes/church flow -- it should just be handed top down from the coordinator, with an option to go solo dolo if your church is not participating in it yet. Ideally the coordinator sets up who will be in what grade with which kids, and the servant just sees the sessions and their kids. Also coordinator sets up how FNA/Small group, etc will be set up
+* Ability for coordinators to add classes midway through the year -- small group stops, and summer project begins, for example
+* Ability for servants to change dates of classes midway -- small group was initially scheduled to be the whole year, but it stopped -- its just the one year
+* Add list view for the sessions, similar to our current Google sheet
+* Add calendar view for availability
+* Sort by/filter in the outreach list is not as clear as it should be
+* We should have an alternating verse/church father quote about service/kids/church/spiritual life to greet the servants
+* Swap servant assignee feature
+* Import CSV shouldn't be in each SessionDetailScreen -- maybe just at the top
+* For outreach, should be able to add notes
+* It shouldn't just say "Church linked" -- it should say the name of the church that you're linked to
+* Need to add logs -- need to be readable, need to be able to tell specific user's actions throughout time, including errors
+* Should be able to mark yourself available/or unavailable from the session detail screen
+* Add ability to open maps for outreach in Google Maps 
+* Quizlet/test feature to match face to name for the kids
+* Add their birthday, get reminders when its coming up
+* Ability to "load more sessions" for the availability tab
+* Coordinators get notifications if their servants change their availaibility to "Unavailable"
+* Coordinators can set up a class with their servants for servant meetings
+* Girls are being seen as options in "manage my kids" for outreach -- church should determine the config of whether or not outreach can be cross gender, and that determines whether we filter them out or not
+* Sometimes when you go to the avialaibility tab, it shows a frozen loading bar at the top
+---
 # Sunday School App - Implementation Plan
 
 **Status**: In Progress
