@@ -340,6 +340,7 @@ function SettingsScreen({
   const { session, profile, signOut } = useAuth()
   const { leaveChurch } = useChurch()
   const styles = useThemedStyles(createSettingsStyles)
+  const [deletingAccount, setDeletingAccount] = React.useState(false)
 
   const isCoordinator = profile?.role === 'coordinator' || profile?.role === 'priest'
 
@@ -355,6 +356,40 @@ function SettingsScreen({
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to sign out')
     }
+  }
+
+  function handleDeleteAccount() {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingAccount(true)
+            try {
+              const { data: { session: currentSession } } = await supabase.auth.getSession()
+              const res = await fetch(
+                `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`,
+                {
+                  method: 'POST',
+                  headers: {
+                    Authorization: `Bearer ${currentSession?.access_token}`,
+                  },
+                },
+              )
+              if (!res.ok) throw new Error('Failed to delete account')
+              await signOut()
+            } catch (error: any) {
+              setDeletingAccount(false)
+              Alert.alert('Error', error.message || 'Failed to delete account')
+            }
+          },
+        },
+      ]
+    )
   }
 
   function handleLeaveChurch() {
@@ -466,6 +501,23 @@ function SettingsScreen({
           </TouchableOpacity>
         ) : null}
       </View>
+
+      {/* Delete Account */}
+      {session && (
+        <View style={[styles.section, { paddingTop: 0 }]}>
+          <TouchableOpacity
+            style={styles.deleteAccountButton}
+            onPress={handleDeleteAccount}
+            disabled={deletingAccount}
+          >
+            {deletingAccount ? (
+              <ActivityIndicator color={colors.error} size="small" />
+            ) : (
+              <Text style={styles.deleteAccountButtonText}>Delete Account</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
     </ScrollView>
   )
 }
@@ -592,6 +644,18 @@ const createSettingsStyles = (colors: ThemeColors) => ({
   chevron: {
     fontSize: 22,
     color: colors.chevron,
+  },
+  deleteAccountButton: {
+    borderWidth: 1,
+    borderColor: colors.error,
+    borderRadius: 8,
+    padding: 16,
+    alignItems: 'center' as const,
+  },
+  deleteAccountButtonText: {
+    color: colors.error,
+    fontSize: 14,
+    fontWeight: '500' as const,
   },
 })
 
