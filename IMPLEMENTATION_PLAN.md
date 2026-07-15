@@ -150,10 +150,10 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 
 ### HIGH PRIORITY — Bugs & Broken Flows
 
-- [ ] **BF.1**: **Splash screen on load** — App skips splash screen and shows a loading spinner on first load. Show the native splash screen for the duration the spinner would appear instead.
-- [ ] **BF.2**: **Dark mode modals** — Modals appear with a light background in dark mode. All modal surfaces must respect the active theme.
+- [x] **BF.1**: **Splash screen on load** — Fixed.
+- [x] **BF.2**: **Dark mode modals** — Fixed.
 - [ ] **BF.3**: **Keyboard dark mode** — Keyboard has a white background in dark mode when editing student details. Fix keyboard appearance to respect the theme (`keyboardAppearance="dark"`).
-- [ ] **BF.4**: **Dashboard scroll / greeting position** — "Good morning, George" renders lower than expected when navigating back to the Dashboard; repositions on refresh. Fix layout so greeting is always at the top. Also: entire dashboard should be scrollable (currently only portions scroll).
+- [x] **BF.4**: **Dashboard scroll / greeting position** — Fixed.
 - [x] **BF.5**: **Student count tag stale after import** — Fixed: `GradeDetailScreen` now uses `useFocusEffect` to refetch students on focus, so the list (and count in the header) updates automatically when returning from import.
 - [x] **BF.6**: **Student name stale after edit** — Fixed: same `useFocusEffect` in `GradeDetailScreen` ensures the list refetches after returning from edit.
 - [x] **BF.7**: **Session topic stale after edit** — Fixed: `SessionDetailScreen` now tracks session in local state (`localSession`); `handleSaveTopic` updates `localSession.lessonTopic` immediately on success.
@@ -311,7 +311,7 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 
 ## Phase 9: Local Testing (On-Device, 1-2 Weeks)
 
-> Build a dev version via EAS, install on George's and girlfriend's phones, and dogfood for 1-2 weeks with real data before beta.
+> Build a dev version via EAS, install on George's phone, and dogfood for 1-2 weeks with real data before beta.
 
 ### Pre-requisites
 - [ ] **Test.1**: Configure `app.json` — bundle ID, app name, version, icons, splash screen
@@ -321,7 +321,7 @@ See `CLAUDE.md` for full project context and `DESIGN.md` for architecture decisi
 
 ### Testing
 - [ ] **Test.5**: Build dev client via `eas build --profile development` (iOS + Android)
-- [ ] **Test.6**: Install on George's phone + girlfriend's phone
+- [ ] **Test.6**: Install on George's phone + another tester's phone
 - [ ] **Test.7**: Dogfood for 1-2 weeks — use the app for real Sunday School sessions
   - Track real attendance
   - Log real outreach visits

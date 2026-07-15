@@ -23,10 +23,10 @@ interface Props {
 }
 
 // Dev accounts that bypass magic link and use password auth for testing.
-const DEV_ACCOUNTS: Record<string, string> = {
+const DEV_ACCOUNTS: Record<string, string> = __DEV__ ? {
   'test@gmail.com': '123456',
   'test2@gmail.com': '123456',
-}
+} : {}
 
 export default function LoginScreen({ navigation, onTakeTour }: Props) {
   const [email, setEmail] = useState('')
