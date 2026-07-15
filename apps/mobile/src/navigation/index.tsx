@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView, Linking } from 'react-native'
+import ConsentScreen from '../screens/auth/ConsentScreen'
+import { useConsent } from '../hooks/useConsent'
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
@@ -518,6 +520,26 @@ function SettingsScreen({
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Legal */}
+      <View style={[styles.section, { paddingTop: 0 }]}>
+        <View style={styles.optionGroup}>
+          <TouchableOpacity
+            style={styles.optionRow}
+            onPress={() => Linking.openURL('https://georgemelek.github.io/sunday-school-app/privacy-policy.html')}
+          >
+            <Text style={styles.optionLabel}>Privacy Policy</Text>
+            <Text style={styles.chevron}>{'›'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.optionRow, { borderBottomWidth: 0 }]}
+            onPress={() => Linking.openURL('https://georgemelek.github.io/sunday-school-app/terms.html')}
+          >
+            <Text style={styles.optionLabel}>Terms of Service</Text>
+            <Text style={styles.chevron}>{'›'}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </ScrollView>
   )
 }
@@ -1053,6 +1075,7 @@ export default function RootNavigator() {
   const { colors, isDark } = useTheme()
   const { isTourMode, startTour, endTour } = useTour()
   const { validateInvite } = useChurch()
+  const { consentAccepted, acceptConsent } = useConsent()
 
   // Deep link invite handling
   const [pendingInvite, setPendingInvite] = useState<InviteDetails | null>(null)
@@ -1097,13 +1120,18 @@ export default function RootNavigator() {
     ? { ...DarkTheme, colors: { ...DarkTheme.colors, background: colors.background, card: colors.card } }
     : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: colors.background, card: colors.card } }
 
-  // Auth loading state
-  if (loading) {
+  // Auth loading state (also covers consent not yet read from AsyncStorage)
+  if (loading || consentAccepted === null) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     )
+  }
+
+  // Consent gate — must agree before seeing anything
+  if (!consentAccepted) {
+    return <ConsentScreen onAccept={acceptConsent} />
   }
 
   // Tour mode — show servant tab navigator with mock data (bypasses church_id gate)
